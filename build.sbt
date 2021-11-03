@@ -2,7 +2,7 @@ name := "deadlock-finder"
 
 version := "0.1"
 
-scalaVersion := "2.13.6"
+scalaVersion := "3.1.0"
 
 idePackagePrefix := Some("deadlockFinder")
 

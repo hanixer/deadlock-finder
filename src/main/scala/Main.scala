@@ -2,8 +2,24 @@ package deadlockFinder
 
 import org.eclipse.jdt.core.dom.{AST, ASTParser, ASTVisitor, AbstractTypeDeclaration, CompilationUnit, FieldAccess, TypeDeclaration}
 
+
 object Main {
+  def decide(k: Expr): Unit = k match {
+    case IntLiteral(n, _) => println(s"${n} is the literal")
+    case Variable(name, _) => println(s"${name} is the variable!")
+    case _ => println("don't rellay know...")
+  }
+
   def main(args: Array[String]): Unit = {
+    playWithEclipse
+
+    val loc = SourceLoc(32, 4)
+    decide(IntLiteral(3, loc))
+    decide(Variable("3", loc))
+    decide(null)
+  }
+
+  private def playWithEclipse = {
     val parser = ASTParser.newParser(AST.JLS16)
     parser.setSource("class Foo {} class booka".toCharArray)
     parser.setKind(ASTParser.K_COMPILATION_UNIT)
@@ -13,6 +29,7 @@ object Main {
     val node = parser.createAST(null).asInstanceOf[CompilationUnit]
     node.accept(Visitor)
   }
+
 }
 
 object Visitor extends ASTVisitor {
