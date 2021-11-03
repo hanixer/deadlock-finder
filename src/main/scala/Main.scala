@@ -1,7 +1,7 @@
 package deadlockFinder
 
 import org.eclipse.jdt.core.dom.{AST, ASTParser, ASTVisitor, AbstractTypeDeclaration, CompilationUnit, FieldAccess, TypeDeclaration}
-
+import deadlockFinder.hir.{Expr, IntLiteral, Variable}
 
 object Main {
   def decide(k: Expr): Unit = k match {
