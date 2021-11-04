@@ -15,7 +15,8 @@ object Main:
 //    val probs = node.getProblems
 //    println(probs.mkString("Array(", ", ", ")"))
     println("pass to translation...")
-    SourceToHir(node)
+    val res = SourceToHir(node)
+    println(res)
 
   private def parseJava(source: String): CompilationUnit =
     val parser = ASTParser.newParser(AST.JLS16)

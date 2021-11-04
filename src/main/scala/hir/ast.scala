@@ -6,9 +6,9 @@ abstract sealed class AstNode {
   val loc: SourceLoc
 }
 
-case class Program(funcs: List[Int], loc: SourceLoc = SourceLoc(1, 1)) extends AstNode
+case class Program(funcs: List[FuncDecl], loc: SourceLoc = SourceLoc(1, 1)) extends AstNode
 
-case class FuncDecl(name: String, params: List[Param], retTyp: Type, body: Stmt, loc: SourceLoc) extends AstNode
+case class FuncDecl(name: String, params: List[Param], retTyp: Type, body: Block, loc: SourceLoc) extends AstNode
 
 case class Param(name: String, typ: Type, loc: SourceLoc) extends AstNode
 
@@ -22,6 +22,8 @@ case class VarDecl(name: String, t: Type, loc: SourceLoc) extends Stmt
 case class IfThenElse(cond: Expr, tBranch: Stmt, eBranch: Option[Stmt], loc: SourceLoc) extends Stmt
 
 case class While(cond: Expr, body: Stmt, loc: SourceLoc) extends Stmt
+
+case class Block(stmts: List[Stmt], loc: SourceLoc) extends Stmt
 
 case class Break(loc: SourceLoc) extends Stmt
 
