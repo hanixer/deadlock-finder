@@ -1,6 +1,6 @@
-package deadlockFinder.hir
+package deadlockFinder
+package hir
 
-import deadlockFinder.SourceLoc
 
 abstract sealed class AstNode {
   val loc: SourceLoc

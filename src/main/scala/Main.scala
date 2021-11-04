@@ -1,45 +1,27 @@
 package deadlockFinder
 
-import org.eclipse.jdt.core.dom.{AST, ASTParser, ASTVisitor, AbstractTypeDeclaration, CompilationUnit, FieldAccess, TypeDeclaration}
-import deadlockFinder.hir.{Expr, IntLiteral, Variable}
+import hir.{Expr, IntLiteral, Variable}
+import translation.SourceToHir
 
-object Main {
-  def decide(k: Expr): Unit = k match {
-    case IntLiteral(n, _) => println(s"${n} is the literal")
-    case Variable(name, _) => println(s"${name} is the variable!")
-    case _ => println("don't rellay know...")
-  }
+import org.eclipse.jdt.core.dom.*
 
-  def main(args: Array[String]): Unit = {
-    playWithEclipse
+object Main:
+  def main(args: Array[String]): Unit =
+    val source = "package lapack; class Mini { void f2() { f1(\"\"); } void f1(String ooo) {f2();} }"
+    val node: CompilationUnit = parseJava(source)
+    val probs = node.getProblems
+    println(probs.mkString("Array(", ", ", ")"))
+    println("pass to translation...")
+    SourceToHir(node)
 
-    val loc = SourceLoc(32, 4)
-    decide(IntLiteral(3, loc))
-    decide(Variable("3", loc))
-    decide(null)
-  }
-
-  private def playWithEclipse = {
+  private def parseJava(source: String): CompilationUnit =
     val parser = ASTParser.newParser(AST.JLS16)
-    parser.setSource("class Foo {} class booka".toCharArray)
+    parser.setSource(source.toCharArray)
     parser.setKind(ASTParser.K_COMPILATION_UNIT)
     parser.setResolveBindings(true)
-    parser.setEnvironment(Array.empty, Array.empty, Array.empty, false)
-    parser.setUnitName("Grooo")
-    val node = parser.createAST(null).asInstanceOf[CompilationUnit]
-    node.accept(Visitor)
-  }
+    parser.setEnvironment(Array.empty, Array.empty, Array.empty, true)
+    parser.setUnitName("Unit name")
+    parser.createAST(null).asInstanceOf[CompilationUnit]
 
-}
-
-object Visitor extends ASTVisitor {
-  override def visit(node: CompilationUnit): Boolean = {
-    println("Compilation unit is here!")
-    true
-  }
-  override def visit(node: TypeDeclaration): Boolean = {
-    println("Here is a type: " + node.getName.getIdentifier)
-    false
-  }
-}
+end Main
 
