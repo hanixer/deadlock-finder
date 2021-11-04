@@ -5,12 +5,15 @@ import translation.SourceToHir
 
 import org.eclipse.jdt.core.dom.*
 
+import java.nio.file.Path
+
 object Main:
   def main(args: Array[String]): Unit =
-    val source = "package lapack; class Mini { void f2() { f1(\"\"); } void f1(String ooo) {f2();} }"
+    val source = java.nio.file.Files.readString(Path.of("examples/Example1.java"))
+//    val source = "package lapack; class Mini { void f2() { f1(\"\"); } void f1(String ooo) {f2();} }"
     val node: CompilationUnit = parseJava(source)
-    val probs = node.getProblems
-    println(probs.mkString("Array(", ", ", ")"))
+//    val probs = node.getProblems
+//    println(probs.mkString("Array(", ", ", ")"))
     println("pass to translation...")
     SourceToHir(node)
 
