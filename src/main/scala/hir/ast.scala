@@ -38,13 +38,15 @@ case class CallStmt(callExpr: CallExpr) extends Stmt {
 
 trait Expr extends AstNode
 
-case class IntLiteral(n: Int, loc: SourceLoc) extends Expr
+trait SimpleExpr extends Expr
 
-case class Variable(name: String, loc: SourceLoc) extends Expr
+case class IntLiteral(n: Int, loc: SourceLoc) extends SimpleExpr
 
-case class BinaryOpExpr(op: BinaryOp, lhs: Expr, rhs: Expr, loc: SourceLoc) extends Expr
+case class Variable(name: String, loc: SourceLoc) extends SimpleExpr
 
-case class CallExpr(name: String, args: List[Expr], loc: SourceLoc) extends Expr
+case class BinaryOpExpr(op: BinaryOp, lhs: SimpleExpr, rhs: SimpleExpr, loc: SourceLoc) extends Expr
+
+case class CallExpr(name: String, args: List[SimpleExpr], loc: SourceLoc) extends Expr
 
 
 sealed trait Type

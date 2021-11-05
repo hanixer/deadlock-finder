@@ -181,8 +181,8 @@ private object Visitor extends ASTVisitor:
       else false
 
     val op = translateOperator(node.getOperator)
-    val lhs = node.getLeftOperand.getProperty(TranslateProperty).asInstanceOf[Expr]
-    val rhs = node.getRightOperand.getProperty(TranslateProperty).asInstanceOf[Expr]
+    val lhs = node.getLeftOperand.getProperty(TranslateProperty).asInstanceOf[SimpleExpr]
+    val rhs = node.getRightOperand.getProperty(TranslateProperty).asInstanceOf[SimpleExpr]
     val loc = mkSourceLoc(node)
     val expr = BinaryOpExpr(op, lhs, rhs, loc)
 

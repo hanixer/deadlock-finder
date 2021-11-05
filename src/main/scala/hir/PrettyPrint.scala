@@ -16,7 +16,8 @@ object PrettyPrint {
 
   def stmt(s: Stmt): Doc = s match
     case b: Block => "{" +: Doc.fill(Doc.line, b.stmts.map(stmt)) :+ "}"
-    case a: Assignment => Doc.text(a.lhs) :+ " = " 
+    case a: Assignment => Doc.text(a.lhs) :+ " = "
+    case _ => Doc.text("unsupported")
     
   def expr(e: Expr): Doc = e match
     case i: IntLiteral => Doc.str(i.n)
