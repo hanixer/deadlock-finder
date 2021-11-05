@@ -10,7 +10,8 @@ import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.*
 import scala.collection.mutable.Stack
 
-/** Translates java source code in the form of Eclipse JDT AST to HIR
+/** 
+  * Translates java source code in the form of Eclipse JDT AST to HIR
   * (High-level intermediate representation)
   */
 object SourceToHir:
@@ -132,7 +133,13 @@ private object Visitor extends ASTVisitor:
 
     false
 
+  override def visit(node: BlockNode): Boolean =
+    tempVarStack.push(ListBuffer())
+    true
+
   override def endVisit(node: BlockNode): Unit =
+    tempVarStack.pop()
+
     val stmts = node.statements.asScala.toList
       .filter(s => s != null)
       .map(s => s.asInstanceOf[Statement])
