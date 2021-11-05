@@ -5,9 +5,10 @@ import org.typelevel.paiges.Doc
 import deadlockFinder.hir.PrettyPrint
 
 object PrettyPrint:
-  def apply(prog: Program, width: Int = 80): String =
+  def apply(prog: Program, width: Int = 0): String =
     val first = func(prog.funcs(0))
-    first.render(0)
+    val res = Doc.fill(Doc.line + Doc.line, prog.funcs.map(func))
+    res.render(width)
 
   // <FuncDecl> ::= func <name>(<name>: <typ>, ...): <type> { <body> }
   def func(f: FuncDecl): Doc =
@@ -31,7 +32,11 @@ object PrettyPrint:
         case _       => Doc.empty
       ("var " + vd.name + ": ") +: (Doc.str(vd.t) + rhs)
 
-    case _ => Doc.text("unsupported")
+    case c: CallStmt =>
+      val args = separateComma(c.callExpr.args.map(expr))
+      (c.callExpr.name + "(") +: (args :+ ")")
+    
+    case _ => Doc.text("unsupported statement for printing")
 
   def expr(e: Expr): Doc = e match
     case i: IntLiteral => Doc.str(i.n)

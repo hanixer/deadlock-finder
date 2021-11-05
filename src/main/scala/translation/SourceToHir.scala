@@ -42,7 +42,9 @@ private object Visitor extends ASTVisitor:
 
   def mkFullName(meth: MethodDeclaration): String =
     val n = meth.getName.getIdentifier
-    val b = meth.resolveBinding()
+    mkFullName(meth.resolveBinding, n)
+
+  def mkFullName(b: IMethodBinding, n: String): String =
     if b != null then
       val tb = b.getDeclaringClass
       if tb != null then s"${mkFullName(b.getDeclaringClass)}.$n"
@@ -55,6 +57,11 @@ private object Visitor extends ASTVisitor:
       compilationUnit.getLineNumber(pos),
       compilationUnit.getColumnNumber(pos) + 1
     )
+
+  def shouldMakeTemporary(node: Expression): Boolean =
+    val p = node.getParent
+    if p.isInstanceOf[Expression] then true
+    else false
 
   def translateType(typeNode: TypeNode): Type =
     val tb = typeNode.resolveBinding()
@@ -94,13 +101,17 @@ private object Visitor extends ASTVisitor:
     stmtsStack.top += VarDecl(name, typ, rhs, loc)
     name
 
-  override def visit(node: CompilationUnit): Boolean =
-    println("Compilation unit is here!")
-    compilationUnit = node
-    true
+  def getResultExpr(node: ASTNode): Expr =
+    node.getProperty(TranslateProperty).asInstanceOf[Expr]
 
-  override def visit(node: TypeDeclaration): Boolean =
-    println("Here is a type: " + mkFullName(node.resolveBinding()))
+  def getResultSimpleE(node: ASTNode): SimpleExpr =
+    node.getProperty(TranslateProperty).asInstanceOf[SimpleExpr]
+
+  def getResultStmt(node: ASTNode): Stmt =
+    node.getProperty(TranslateProperty).asInstanceOf[Stmt]
+
+  override def visit(node: CompilationUnit): Boolean =
+    compilationUnit = node
     true
 
   override def endVisit(node: TypeDeclaration): Unit =
@@ -152,9 +163,7 @@ private object Visitor extends ASTVisitor:
     val varDecls = node.fragments.asScala.toList.map(f =>
       val frag = f.asInstanceOf[VariableDeclarationFragment]
       val name = frag.getName.getIdentifier
-      val rhs = Option(frag.getInitializer).map(e =>
-        e.getProperty(TranslateProperty).asInstanceOf[Expr]
-      )
+      val rhs = Option(frag.getInitializer).map(getResultExpr)
       val loc = mkSourceLoc(frag)
       VarDecl(name, typ, rhs, loc)
     )
@@ -164,26 +173,35 @@ private object Visitor extends ASTVisitor:
   override def endVisit(node: ExpressionStatement): Unit =    
     node.getExpression match
       case mi: MethodInvocation => 
-        // TODO: implement method invocation      
-        println("Method invocations not implemented (Yet)")
-        
+        val e = mi.getProperty(TranslateProperty).asInstanceOf[CallExpr]
+        stmtsStack.top += CallStmt(e)
+      case _ => 
+
+  override def endVisit(node: MethodInvocation): Unit =
+    val mb = node.resolveMethodBinding
+    if Modifier.isStatic(mb.getModifiers) then
+      val args = node.arguments.asScala.toList.map(a =>
+        getResultSimpleE(a.asInstanceOf[Expression])
+      )
+      val name = mkFullName(mb, node.getName.getIdentifier)
+      val loc = mkSourceLoc(node)
+      val expr = CallExpr(name, args, loc)
+
+      // Make temporary variable if the parent is an expression
+      if shouldMakeTemporary(node) then
+        var typ = translateType(node.resolveTypeBinding)
+        var name = addTempVar(typ, loc, Some(expr))
+        node.setProperty(TranslateProperty, Variable(name, loc))
+      else node.setProperty(TranslateProperty, expr)
+      
+    else ??? // Non-static methods are not implemented
 
   override def endVisit(node: InfixExpression): Unit =
     val tb = node.resolveTypeBinding
 
-    // Make temporary variable if the parent is an expression
-    val shouldMkTemp =
-      val p = node.getParent
-      if p.isInstanceOf[Expression] then true
-      else false
-
     val op = translateOperator(node.getOperator)
-    val lhs = node.getLeftOperand
-      .getProperty(TranslateProperty)
-      .asInstanceOf[SimpleExpr]
-    val rhs = node.getRightOperand
-      .getProperty(TranslateProperty)
-      .asInstanceOf[SimpleExpr]
+    val lhs = getResultSimpleE(node.getLeftOperand)
+    val rhs = getResultSimpleE(node.getRightOperand)
     val loc = mkSourceLoc(node)
 
     if lhs == null || rhs == null then
@@ -191,7 +209,8 @@ private object Visitor extends ASTVisitor:
 
     val expr = BinaryOpExpr(op, lhs, rhs, loc)
 
-    if shouldMkTemp then
+    // Make temporary variable if the parent is an expression
+    if shouldMakeTemporary(node) then
       var typ = translateType(node.resolveTypeBinding)
       var name = addTempVar(typ, loc, Some(expr))
       node.setProperty(TranslateProperty, Variable(name, loc))
@@ -203,7 +222,7 @@ private object Visitor extends ASTVisitor:
     node.getLeftHandSide match
       case sn: SimpleName =>
         val name = sn.getIdentifier
-        val rhs = node.getRightHandSide.getProperty(TranslateProperty).asInstanceOf[Expr]
+        val rhs = getResultExpr(node.getRightHandSide)
         stmtsStack.top += Assignment(name, rhs, mkSourceLoc(node))
 
   override def visit(node: SimpleName): Boolean =
