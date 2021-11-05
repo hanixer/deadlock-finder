@@ -9,14 +9,14 @@ import java.nio.file.Path
 
 object Main:
   def main(args: Array[String]): Unit =
-    val source = java.nio.file.Files.readString(Path.of("examples/Example1.java"))
+    val source = java.nio.file.Files.readString(Path.of("examples/showcase/Example2.java"))
 //    val source = "package lapack; class Mini { void f2() { f1(\"\"); } void f1(String ooo) {f2();} }"
     val node: CompilationUnit = parseJava(source)
 //    val probs = node.getProblems
 //    println(probs.mkString("Array(", ", ", ")"))
     println("pass to translation...")
     val res = SourceToHir(node)
-    println(res)
+    
 
   private def parseJava(source: String): CompilationUnit =
     val parser = ASTParser.newParser(AST.JLS16)

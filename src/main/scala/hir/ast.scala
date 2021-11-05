@@ -17,7 +17,7 @@ trait Stmt extends AstNode
 
 case class Assignment(lhs: String, rhs: Expr, loc: SourceLoc) extends Stmt
 
-case class VarDecl(name: String, t: Type, loc: SourceLoc) extends Stmt
+case class VarDecl(name: String, t: Type, rhs: Option[Expr], loc: SourceLoc) extends Stmt
 
 case class IfThenElse(cond: Expr, tBranch: Stmt, eBranch: Option[Stmt], loc: SourceLoc) extends Stmt
 
@@ -59,5 +59,5 @@ case class ClassType() extends Type
 
 
 enum BinaryOp {
-  case PLUS, MINUS, MUL, DIV, LT, GT, LTE, GTE, EQ
+  case Plus, Minus, Times, Divide, Less, Greater, LessEquals, GreaterEquals, Equals, And, Or
 }
