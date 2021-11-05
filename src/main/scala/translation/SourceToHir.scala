@@ -73,7 +73,17 @@ private object Visitor extends ASTVisitor:
       VoidType()
 
   def translateOperator(op: InfixExpression.Operator): BinaryOp = op match
-
+    case InfixExpression.Operator.PLUS => BinaryOp.Plus
+    case InfixExpression.Operator.MINUS => BinaryOp.Minus
+    case InfixExpression.Operator.TIMES => BinaryOp.Times
+    case InfixExpression.Operator.DIVIDE => BinaryOp.Divide
+    case InfixExpression.Operator.LESS => BinaryOp.Less
+    case InfixExpression.Operator.GREATER => BinaryOp.Greater
+    case InfixExpression.Operator.LESS_EQUALS => BinaryOp.LessEquals
+    case InfixExpression.Operator.GREATER_EQUALS => BinaryOp.GreaterEquals
+    case InfixExpression.Operator.EQUALS => BinaryOp.Equals
+    case InfixExpression.Operator.AND => BinaryOp.And
+    case InfixExpression.Operator.OR => BinaryOp.Or
     case _ =>
       println("Unknown operator: $op")
       BinaryOp.Plus
@@ -148,7 +158,7 @@ private object Visitor extends ASTVisitor:
   override def endVisit(node: VariableDeclarationStatement): Unit =
     val typ = translateType(node.getType)
 
-    node.fragments.asScala.map(f =>
+    val varDecls = node.fragments.asScala.toList.map(f =>
       val frag = f.asInstanceOf[VariableDeclarationFragment]
       val name = frag.getName.getIdentifier
       val rhs = Option(frag.getInitializer).map(e =>
@@ -157,26 +167,13 @@ private object Visitor extends ASTVisitor:
       val loc = mkSourceLoc(frag)
       VarDecl(name, typ, rhs, loc)
     )
+    
+    node.setProperty(TranslateProperty, varDecls)
 
   override def endVisit(node: ExpressionStatement): Unit =
     val lo = node.getLocationInParent
     val exprHir =
       node.getExpression.getProperty(TranslateProperty).asInstanceOf[Expr]
-
-  override def visit(node: NumberLiteral): Boolean =
-    val tb = node.resolveTypeBinding
-    val constExpr = node.resolveConstantExpressionValue
-
-    if tb.getName == "int" then
-      val e = IntLiteral(constExpr.asInstanceOf[Int], mkSourceLoc(node))
-      node.setProperty(TranslateProperty, e)
-
-    // TODO: handle other literals type, like double and strings.
-    // else if tb.getName == "double" then
-    // val e = DoubleLiteral(constExpr.asInstanceOf[Double], mkSourceLoc(node))
-    // node.setProperty(TranslateProperty, e)
-
-    false
 
   override def endVisit(node: InfixExpression): Unit =
     val tb = node.resolveTypeBinding
@@ -195,6 +192,10 @@ private object Visitor extends ASTVisitor:
       .getProperty(TranslateProperty)
       .asInstanceOf[SimpleExpr]
     val loc = mkSourceLoc(node)
+
+    if lhs == null || rhs == null then
+      throw new Error(s"lhs or rhs is null at $loc")
+
     val expr = BinaryOpExpr(op, lhs, rhs, loc)
 
     if shouldMkTemp then
@@ -202,5 +203,28 @@ private object Visitor extends ASTVisitor:
       var name = addTempVar(typ, loc, Some(expr))
       node.setProperty(TranslateProperty, Variable(name, loc))
     else node.setProperty(TranslateProperty, expr)
+
+  override def visit(node: SimpleName): Boolean =
+    var v = Variable(node.getIdentifier, mkSourceLoc(node))
+    node.setProperty(TranslateProperty, v)
+    false
+
+  override def visit(node: NumberLiteral): Boolean =
+    val tb = node.resolveTypeBinding
+    val constExpr = node.resolveConstantExpressionValue
+
+    if tb.getName == "int" then
+      val e = IntLiteral(constExpr.asInstanceOf[Int], mkSourceLoc(node))
+      node.setProperty(TranslateProperty, e)
+
+    // TODO: handle other literals type, like double and strings.
+    // else if tb.getName == "double" then
+    // val e = DoubleLiteral(constExpr.asInstanceOf[Double], mkSourceLoc(node))
+    // node.setProperty(TranslateProperty, e)
+    
+    false
+
+  // override def visit(node: Reference): Boolean =
+
 
 end Visitor
