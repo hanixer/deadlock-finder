@@ -3,15 +3,19 @@ package translation
 
 import hir.*
 
-import org.eclipse.jdt.core.dom.{Type as TypeNode, Block as BlockNode, 
-  Assignment as AssignmentNode, *}
+import org.eclipse.jdt.core.dom.{
+  Type as TypeNode,
+  Block as BlockNode,
+  Assignment as AssignmentNode,
+  *
+}
 
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.*
 import scala.collection.mutable.Stack
+import javax.swing.tree.TreePath
 
-/** 
-  * Translates java source code in the form of Eclipse JDT AST to HIR
+/** Translates java source code in the form of Eclipse JDT AST to HIR
   * (High-level intermediate representation)
   */
 object SourceToHir:
@@ -56,30 +60,21 @@ private object Visitor extends ASTVisitor:
     val tb = typeNode.resolveBinding()
     translateType(tb)
 
-  def translateType(tb: ITypeBinding): Type =    
+  def translateType(tb: ITypeBinding): Type =
     if tb != null then
-      if tb.isPrimitive then tb.getName match 
-        case "int" => IntType()
-        case "Double" => DoubleType()
-        case _ => VoidType()
+      if tb.isPrimitive then
+        tb.getName match
+          case "int"    => IntType()
+          case "Double" => DoubleType()
+          case _        => VoidType()
       else ClassType()
     else
       println(s"Unresolved binding")
       VoidType()
 
   def translateOperator(op: InfixExpression.Operator): BinaryOp = op match
-    case InfixExpression.Operator.PLUS => BinaryOp.Plus
-    case InfixExpression.Operator.MINUS => BinaryOp.Minus
-    case InfixExpression.Operator.TIMES => BinaryOp.Times
-    case InfixExpression.Operator.DIVIDE => BinaryOp.Divide
-    case InfixExpression.Operator.LESS => BinaryOp.Less
-    case InfixExpression.Operator.GREATER => BinaryOp.Greater
-    case InfixExpression.Operator.LESS_EQUALS => BinaryOp.LessEquals
-    case InfixExpression.Operator.GREATER_EQUALS => BinaryOp.GreaterEquals
-    case InfixExpression.Operator.EQUALS => BinaryOp.Equals
-    case InfixExpression.Operator.AND => BinaryOp.And
-    case InfixExpression.Operator.OR => BinaryOp.Or
-    case _ => 
+
+    case _ =>
       println("Unknown operator: $op")
       BinaryOp.Plus
 
@@ -140,21 +135,33 @@ private object Visitor extends ASTVisitor:
   override def endVisit(node: BlockNode): Unit =
     tempVarStack.pop()
 
-    val stmts = node.statements.asScala.toList
-      .filter(s => s != null)
-      .map(s => s.asInstanceOf[Statement])
-      .map(s => s.getProperty(TranslateProperty).asInstanceOf[Stmt])
-    
+    // Variable declaration node is a special case, because in Java
+    // it is possible to declare more than one variable in one statement
+    val stmts = node.statements.asScala.toList.flatMap(a => a match
+      case varDecl: VariableDeclarationStatement =>
+        varDecl.getProperty(TranslateProperty).asInstanceOf[List[VarDecl]]
+      case stmt: Statement => 
+        List(stmt.getProperty(TranslateProperty).asInstanceOf[Stmt]))
+
     node.setProperty(TranslateProperty, Block(stmts, mkSourceLoc(node)))
 
-  override def visit(node: VariableDeclarationStatement): Boolean =
-    println("And here's variable declaration!!!")
-    true
-    
+  override def endVisit(node: VariableDeclarationStatement): Unit =
+    val typ = translateType(node.getType)
+
+    node.fragments.asScala.map(f =>
+      val frag = f.asInstanceOf[VariableDeclarationFragment]
+      val name = frag.getName.getIdentifier
+      val rhs = Option(frag.getInitializer).map(e =>
+        e.getProperty(TranslateProperty).asInstanceOf[Expr]
+      )
+      val loc = mkSourceLoc(frag)
+      VarDecl(name, typ, rhs, loc)
+    )
 
   override def endVisit(node: ExpressionStatement): Unit =
     val lo = node.getLocationInParent
-    val exprHir = node.getExpression.getProperty(TranslateProperty).asInstanceOf[Expr]
+    val exprHir =
+      node.getExpression.getProperty(TranslateProperty).asInstanceOf[Expr]
 
   override def visit(node: NumberLiteral): Boolean =
     val tb = node.resolveTypeBinding
@@ -166,8 +173,8 @@ private object Visitor extends ASTVisitor:
 
     // TODO: handle other literals type, like double and strings.
     // else if tb.getName == "double" then
-      // val e = DoubleLiteral(constExpr.asInstanceOf[Double], mkSourceLoc(node))
-      // node.setProperty(TranslateProperty, e)
+    // val e = DoubleLiteral(constExpr.asInstanceOf[Double], mkSourceLoc(node))
+    // node.setProperty(TranslateProperty, e)
 
     false
 
@@ -181,8 +188,12 @@ private object Visitor extends ASTVisitor:
       else false
 
     val op = translateOperator(node.getOperator)
-    val lhs = node.getLeftOperand.getProperty(TranslateProperty).asInstanceOf[SimpleExpr]
-    val rhs = node.getRightOperand.getProperty(TranslateProperty).asInstanceOf[SimpleExpr]
+    val lhs = node.getLeftOperand
+      .getProperty(TranslateProperty)
+      .asInstanceOf[SimpleExpr]
+    val rhs = node.getRightOperand
+      .getProperty(TranslateProperty)
+      .asInstanceOf[SimpleExpr]
     val loc = mkSourceLoc(node)
     val expr = BinaryOpExpr(op, lhs, rhs, loc)
 
@@ -190,8 +201,6 @@ private object Visitor extends ASTVisitor:
       var typ = translateType(node.resolveTypeBinding)
       var name = addTempVar(typ, loc, Some(expr))
       node.setProperty(TranslateProperty, Variable(name, loc))
-    else
-      node.setProperty(TranslateProperty, expr)
-
+    else node.setProperty(TranslateProperty, expr)
 
 end Visitor
