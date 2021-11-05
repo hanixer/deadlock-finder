@@ -27,7 +27,7 @@ private object Visitor extends ASTVisitor:
   val TranslateProperty = "Translate"
   var compilationUnit: CompilationUnit = null
   private val funcs = ListBuffer[FuncDecl]()
-  val tempVarStack: Stack[ListBuffer[VarDecl]] = Stack()
+  val stmtsStack: Stack[ListBuffer[Stmt]] = Stack()
   var tempCounter = 0
 
   def getFuncs: List[FuncDecl] = funcs.toList
@@ -91,7 +91,7 @@ private object Visitor extends ASTVisitor:
   def addTempVar(typ: Type, loc: SourceLoc, rhs: Option[Expr] = None): String =
     tempCounter += 1
     val name = s"t~$tempCounter"
-    tempVarStack.top += VarDecl(name, typ, rhs, loc)
+    stmtsStack.top += VarDecl(name, typ, rhs, loc)
     name
 
   override def visit(node: CompilationUnit): Boolean =
@@ -139,20 +139,11 @@ private object Visitor extends ASTVisitor:
     false
 
   override def visit(node: BlockNode): Boolean =
-    tempVarStack.push(ListBuffer())
+    stmtsStack.push(ListBuffer())
     true
 
   override def endVisit(node: BlockNode): Unit =
-    tempVarStack.pop()
-
-    // Variable declaration node is a special case, because in Java
-    // it is possible to declare more than one variable in one statement
-    val stmts = node.statements.asScala.toList.flatMap(a => a match
-      case varDecl: VariableDeclarationStatement =>
-        varDecl.getProperty(TranslateProperty).asInstanceOf[List[VarDecl]]
-      case stmt: Statement => 
-        List(stmt.getProperty(TranslateProperty).asInstanceOf[Stmt]))
-
+    val stmts = stmtsStack.pop().toList
     node.setProperty(TranslateProperty, Block(stmts, mkSourceLoc(node)))
 
   override def endVisit(node: VariableDeclarationStatement): Unit =
@@ -167,13 +158,15 @@ private object Visitor extends ASTVisitor:
       val loc = mkSourceLoc(frag)
       VarDecl(name, typ, rhs, loc)
     )
-    
-    node.setProperty(TranslateProperty, varDecls)
 
-  override def endVisit(node: ExpressionStatement): Unit =
-    val lo = node.getLocationInParent
-    val exprHir =
-      node.getExpression.getProperty(TranslateProperty).asInstanceOf[Expr]
+    stmtsStack.top.appendAll(varDecls)
+
+  override def endVisit(node: ExpressionStatement): Unit =    
+    node.getExpression match
+      case mi: MethodInvocation => 
+        // TODO: implement method invocation      
+        println("Method invocations not implemented (Yet)")
+        
 
   override def endVisit(node: InfixExpression): Unit =
     val tb = node.resolveTypeBinding
@@ -203,6 +196,15 @@ private object Visitor extends ASTVisitor:
       var name = addTempVar(typ, loc, Some(expr))
       node.setProperty(TranslateProperty, Variable(name, loc))
     else node.setProperty(TranslateProperty, expr)
+
+  override def endVisit(node: AssignmentNode): Unit =
+    // Now we support assignment only to a variable, 
+    // ignoring assignment to an array element or a field.
+    node.getLeftHandSide match
+      case sn: SimpleName =>
+        val name = sn.getIdentifier
+        val rhs = node.getRightHandSide.getProperty(TranslateProperty).asInstanceOf[Expr]
+        stmtsStack.top += Assignment(name, rhs, mkSourceLoc(node))
 
   override def visit(node: SimpleName): Boolean =
     var v = Variable(node.getIdentifier, mkSourceLoc(node))
