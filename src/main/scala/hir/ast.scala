@@ -26,13 +26,13 @@ case class VarDecl(name: String, t: Type, rhs: Option[Expr], loc: SourceLoc)
     extends Stmt
 
 case class IfThenElse(
-    cond: Expr,
-    tBranch: Stmt,
-    eBranch: Option[Stmt],
+    cond: SimpleExpr,
+    thenStmt: Stmt,
+    elseStmt: Option[Stmt],
     loc: SourceLoc
 ) extends Stmt
 
-case class While(cond: Expr, body: Stmt, loc: SourceLoc) extends Stmt
+case class While(cond: SimpleExpr, body: Stmt, loc: SourceLoc) extends Stmt
 
 case class Block(stmts: List[Stmt], loc: SourceLoc) extends Stmt
 

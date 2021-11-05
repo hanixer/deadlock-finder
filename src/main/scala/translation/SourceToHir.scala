@@ -61,6 +61,7 @@ private object Visitor extends ASTVisitor:
   def shouldMakeTemporary(node: Expression): Boolean =
     val p = node.getParent
     if p.isInstanceOf[Expression] && p.getNodeType != ASTNode.ASSIGNMENT then true
+    else if p.getNodeType == ASTNode.IF_STATEMENT then true
     else false
 
   def translateType(typeNode: TypeNode): Type =
@@ -98,13 +99,16 @@ private object Visitor extends ASTVisitor:
   def addTempVar(typ: Type, loc: SourceLoc, rhs: Option[Expr] = None): String =
     tempCounter += 1
     val name = s"t~$tempCounter"
-    stmtsStack.top += VarDecl(name, typ, rhs, loc)
+    addStmt(VarDecl(name, typ, rhs, loc))
     name
+
+  def addStmt(stmt: Stmt): Unit =
+    stmtsStack.top += stmt
 
   def getResultExpr(node: ASTNode): Expr =
     node.getProperty(TranslateProperty).asInstanceOf[Expr]
 
-  def getResultSimpleE(node: ASTNode): SimpleExpr =
+  def getResultSimpleExpr(node: ASTNode): SimpleExpr =
     node.getProperty(TranslateProperty).asInstanceOf[SimpleExpr]
 
   def getResultStmt(node: ASTNode): Stmt =
@@ -157,6 +161,13 @@ private object Visitor extends ASTVisitor:
     val stmts = stmtsStack.pop().toList
     node.setProperty(TranslateProperty, Block(stmts, mkSourceLoc(node)))
 
+  override def endVisit(node: IfStatement): Unit =
+    val cond = getResultSimpleExpr(node.getExpression)
+    val thenStmt = getResultStmt(node.getThenStatement)
+    val elseStmt = Option(node.getElseStatement).map(getResultStmt)
+    val loc = mkSourceLoc(node)
+    addStmt(IfThenElse(cond, thenStmt, elseStmt, loc))
+
   override def endVisit(node: VariableDeclarationStatement): Unit =
     val typ = translateType(node.getType)
 
@@ -174,14 +185,14 @@ private object Visitor extends ASTVisitor:
     node.getExpression match
       case mi: MethodInvocation => 
         val e = mi.getProperty(TranslateProperty).asInstanceOf[CallExpr]
-        stmtsStack.top += CallStmt(e)
+        addStmt(CallStmt(e))
       case _ => 
 
   override def endVisit(node: MethodInvocation): Unit =
     val mb = node.resolveMethodBinding
     if Modifier.isStatic(mb.getModifiers) then
       val args = node.arguments.asScala.toList.map(a =>
-        getResultSimpleE(a.asInstanceOf[Expression])
+        getResultSimpleExpr(a.asInstanceOf[Expression])
       )
       val name = mkFullName(mb, node.getName.getIdentifier)
       val loc = mkSourceLoc(node)
@@ -200,8 +211,8 @@ private object Visitor extends ASTVisitor:
     val tb = node.resolveTypeBinding
 
     val op = translateOperator(node.getOperator)
-    val lhs = getResultSimpleE(node.getLeftOperand)
-    val rhs = getResultSimpleE(node.getRightOperand)
+    val lhs = getResultSimpleExpr(node.getLeftOperand)
+    val rhs = getResultSimpleExpr(node.getRightOperand)
     val loc = mkSourceLoc(node)
 
     if lhs == null || rhs == null then
@@ -223,7 +234,7 @@ private object Visitor extends ASTVisitor:
       case sn: SimpleName =>
         val name = sn.getIdentifier
         val rhs = getResultExpr(node.getRightHandSide)
-        stmtsStack.top += Assignment(name, rhs, mkSourceLoc(node))
+        addStmt(Assignment(name, rhs, mkSourceLoc(node)))
 
   override def visit(node: SimpleName): Boolean =
     var v = Variable(node.getIdentifier, mkSourceLoc(node))

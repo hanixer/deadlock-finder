@@ -36,6 +36,13 @@ object PrettyPrint:
       val args = separateComma(c.callExpr.args.map(expr))
       (c.callExpr.name + "(") +: (args :+ ")")
     
+    case ite: IfThenElse =>
+      val elseBranch = ite.elseStmt match
+        case Some(s) => " else " +: stmt(s)
+        case _ => Doc.empty
+      val ifCond = ("if (" +: expr(ite.cond)) :+ ") "
+      ifCond + stmt(ite.thenStmt) + elseBranch
+
     case _ => Doc.text("unsupported statement for printing")
 
   def expr(e: Expr): Doc = e match
