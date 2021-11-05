@@ -60,7 +60,7 @@ private object Visitor extends ASTVisitor:
 
   def shouldMakeTemporary(node: Expression): Boolean =
     val p = node.getParent
-    if p.isInstanceOf[Expression] then true
+    if p.isInstanceOf[Expression] && p.getNodeType != ASTNode.ASSIGNMENT then true
     else false
 
   def translateType(typeNode: TypeNode): Type =

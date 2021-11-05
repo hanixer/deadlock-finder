@@ -12,7 +12,7 @@ object PrettyPrint:
 
   // <FuncDecl> ::= func <name>(<name>: <typ>, ...): <type> { <body> }
   def func(f: FuncDecl): Doc =
-    val params = f.params.map(p => Doc.text(p.name) :+ ": " + Doc.str(p.typ))
+    val params = f.params.map(p => (p.name + ": ") +: Doc.str(p.typ))
     val paramsComma = separateComma(params)
     val body = stmt(f.body)
     ("func " +: Doc.text(f.name))
@@ -24,7 +24,7 @@ object PrettyPrint:
       val body = Doc.fill(Doc.line, b.stmts.map(stmt))
       ("{" +: Doc.line) + body + (Doc.line :+ "}")
 
-    case a: Assignment => Doc.text(a.lhs) :+ " = " + expr(a.rhs)
+    case a: Assignment => (a.lhs + " = ") +: expr(a.rhs)
 
     case vd: VarDecl =>
       var rhs = vd.rhs match
