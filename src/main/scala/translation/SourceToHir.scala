@@ -27,7 +27,7 @@ private object Visitor extends ASTVisitor:
   val TranslateProperty = "Translate"
   var compilationUnit: CompilationUnit = null
   private val funcs = ListBuffer[FuncDecl]()
-  val stmtsStack: Stack[ListBuffer[Stmt]] = Stack()
+  val stmtsStack: Stack[ListBuffer[(Stmt, SourceLoc)]] = Stack()
   var tempCounter = 0
 
   def getFuncs: List[FuncDecl] = funcs.toList
@@ -60,8 +60,10 @@ private object Visitor extends ASTVisitor:
 
   def shouldMakeTemporary(node: Expression): Boolean =
     val p = node.getParent
-    if p.isInstanceOf[Expression] && p.getNodeType != ASTNode.ASSIGNMENT then true
+    if p.isInstanceOf[Expression] && p.getNodeType != ASTNode.ASSIGNMENT then
+      true
     else if p.getNodeType == ASTNode.IF_STATEMENT then true
+    else if p.getNodeType == ASTNode.RETURN_STATEMENT then true
     else false
 
   def translateType(typeNode: TypeNode): Type =
@@ -72,28 +74,28 @@ private object Visitor extends ASTVisitor:
     if tb != null then
       if tb.isPrimitive then
         tb.getName match
-          case "int"    => IntType
-          case "double" => DoubleType
-          case "float" => FloatType
+          case "int"     => IntType
+          case "double"  => DoubleType
+          case "float"   => FloatType
           case "boolean" => BooleanType
-          case _        => VoidType
+          case _         => VoidType
       else ClassType()
     else
       println(s"Unresolved binding")
       VoidType
 
   def translateOperator(op: InfixExpression.Operator): BinaryOp = op match
-    case InfixExpression.Operator.PLUS => BinaryOp.Plus
-    case InfixExpression.Operator.MINUS => BinaryOp.Minus
-    case InfixExpression.Operator.TIMES => BinaryOp.Times
-    case InfixExpression.Operator.DIVIDE => BinaryOp.Divide
-    case InfixExpression.Operator.LESS => BinaryOp.Less
-    case InfixExpression.Operator.GREATER => BinaryOp.Greater
-    case InfixExpression.Operator.LESS_EQUALS => BinaryOp.LessEquals
+    case InfixExpression.Operator.PLUS           => BinaryOp.Plus
+    case InfixExpression.Operator.MINUS          => BinaryOp.Minus
+    case InfixExpression.Operator.TIMES          => BinaryOp.Times
+    case InfixExpression.Operator.DIVIDE         => BinaryOp.Divide
+    case InfixExpression.Operator.LESS           => BinaryOp.Less
+    case InfixExpression.Operator.GREATER        => BinaryOp.Greater
+    case InfixExpression.Operator.LESS_EQUALS    => BinaryOp.LessEquals
     case InfixExpression.Operator.GREATER_EQUALS => BinaryOp.GreaterEquals
-    case InfixExpression.Operator.EQUALS => BinaryOp.Equals
-    case InfixExpression.Operator.AND => BinaryOp.And
-    case InfixExpression.Operator.OR => BinaryOp.Or
+    case InfixExpression.Operator.EQUALS         => BinaryOp.Equals
+    case InfixExpression.Operator.AND            => BinaryOp.And
+    case InfixExpression.Operator.OR             => BinaryOp.Or
     case _ =>
       println("Unknown operator: $op")
       BinaryOp.Plus
@@ -101,20 +103,23 @@ private object Visitor extends ASTVisitor:
   def addTempVar(typ: Type, loc: SourceLoc, rhs: Option[Expr] = None): String =
     tempCounter += 1
     val name = s"t~$tempCounter"
-    addStmt(VarDecl(name, typ, rhs, loc))
+    addStmt(VarDecl(name, typ, rhs, loc), loc)
     name
 
-  def addStmt(stmt: Stmt): Unit =
-    stmtsStack.top += stmt
+  def addStmt(stmt: Stmt, loc: SourceLoc): Unit =
+    stmtsStack.top.addOne(stmt, loc)
 
   def getResultExpr(node: ASTNode): Expr =
-    node.getProperty(TranslateProperty).asInstanceOf[Expr]
+    Option(getResult[Expr](node)).getOrElse(UnsupportedConstruct(mkSourceLoc(node)))
 
   def getResultSimpleExpr(node: ASTNode): SimpleExpr =
-    node.getProperty(TranslateProperty).asInstanceOf[SimpleExpr]
+    Option(getResult[SimpleExpr](node)).getOrElse(UnsupportedConstruct(mkSourceLoc(node)))
 
   def getResultStmt(node: ASTNode): Stmt =
-    node.getProperty(TranslateProperty).asInstanceOf[Stmt]
+    Option(getResult[Stmt](node)).getOrElse(UnsupportedConstruct(mkSourceLoc(node)))
+
+  def getResult[A](node: ASTNode): A =
+    node.getProperty(TranslateProperty).asInstanceOf[A]
 
   override def visit(node: CompilationUnit): Boolean =
     compilationUnit = node
@@ -160,15 +165,19 @@ private object Visitor extends ASTVisitor:
     true
 
   override def endVisit(node: BlockNode): Unit =
-    val stmts = stmtsStack.pop().toList
+    val stmts = stmtsStack.pop().toList.map((s, l) => if s != null then s else UnsupportedConstruct(l))
     node.setProperty(TranslateProperty, Block(stmts, mkSourceLoc(node)))
+
+  override def visit(node: IfStatement): Boolean =
+    stmtsStack.push(ListBuffer())
+    true
 
   override def endVisit(node: IfStatement): Unit =
     val cond = getResultSimpleExpr(node.getExpression)
     val thenStmt = getResultStmt(node.getThenStatement)
     val elseStmt = Option(node.getElseStatement).map(getResultStmt)
     val loc = mkSourceLoc(node)
-    addStmt(IfThenElse(cond, thenStmt, elseStmt, loc))
+    addStmt(IfThenElse(cond, thenStmt, elseStmt, loc), loc)
 
   override def endVisit(node: VariableDeclarationStatement): Unit =
     val typ = translateType(node.getType)
@@ -178,17 +187,23 @@ private object Visitor extends ASTVisitor:
       val name = frag.getName.getIdentifier
       val rhs = Option(frag.getInitializer).map(getResultExpr)
       val loc = mkSourceLoc(frag)
-      VarDecl(name, typ, rhs, loc)
+      (VarDecl(name, typ, rhs, loc), loc)
     )
 
     stmtsStack.top.appendAll(varDecls)
+  
+  override def endVisit(node: ReturnStatement): Unit =
+    val expr = Option(node.getExpression).map(getResultSimpleExpr)
+    val loc = mkSourceLoc(node)
+    addStmt(Return(expr, loc), loc)
 
-  override def endVisit(node: ExpressionStatement): Unit =    
+  override def endVisit(node: ExpressionStatement): Unit =
     node.getExpression match
-      case mi: MethodInvocation => 
+      case mi: MethodInvocation =>
         val e = mi.getProperty(TranslateProperty).asInstanceOf[CallExpr]
-        addStmt(CallStmt(e))
-      case _ => 
+        val loc = mkSourceLoc(node)
+        addStmt(CallStmt(e), loc)
+      case _ =>
 
   override def endVisit(node: MethodInvocation): Unit =
     val mb = node.resolveMethodBinding
@@ -206,7 +221,6 @@ private object Visitor extends ASTVisitor:
         var name = addTempVar(typ, loc, Some(expr))
         node.setProperty(TranslateProperty, Variable(name, loc))
       else node.setProperty(TranslateProperty, expr)
-      
     else ??? // Non-static methods are not implemented
 
   override def endVisit(node: InfixExpression): Unit =
@@ -230,13 +244,14 @@ private object Visitor extends ASTVisitor:
     else node.setProperty(TranslateProperty, expr)
 
   override def endVisit(node: AssignmentNode): Unit =
-    // Now we support assignment only to a variable, 
+    // Now we support assignment only to a variable,
     // ignoring assignment to an array element or a field.
     node.getLeftHandSide match
       case sn: SimpleName =>
         val name = sn.getIdentifier
         val rhs = getResultExpr(node.getRightHandSide)
-        addStmt(Assignment(name, rhs, mkSourceLoc(node)))
+        val loc = mkSourceLoc(node)
+        addStmt(Assignment(name, rhs, loc), loc)
 
   override def visit(node: SimpleName): Boolean =
     var v = Variable(node.getIdentifier, mkSourceLoc(node))
@@ -255,10 +270,9 @@ private object Visitor extends ASTVisitor:
     // else if tb.getName == "double" then
     // val e = DoubleLiteral(constExpr.asInstanceOf[Double], mkSourceLoc(node))
     // node.setProperty(TranslateProperty, e)
-    
+
     false
 
-  // override def visit(node: Reference): Boolean =
-
+// override def visit(node: Reference): Boolean =
 
 end Visitor

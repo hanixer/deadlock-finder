@@ -64,6 +64,8 @@ case class BinaryOpExpr(
 case class CallExpr(name: String, args: List[SimpleExpr], loc: SourceLoc)
     extends Expr
 
+case class UnsupportedConstruct(loc: SourceLoc) extends SimpleExpr, Stmt
+
 sealed trait Type
 
 case object IntType extends Type:

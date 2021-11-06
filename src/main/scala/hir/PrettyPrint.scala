@@ -43,7 +43,13 @@ object PrettyPrint:
       val ifCond = ("if (" +: expr(ite.cond)) :+ ") "
       ifCond + stmt(ite.thenStmt) + elseBranch
 
-    case _ => Doc.text("unsupported statement for printing")
+    case r: Return =>
+      "return " +: r.expr.map(expr).getOrElse(Doc.empty)
+
+    case u: UnsupportedConstruct =>
+      Doc.text(s"[unsupportedStmt at ${u.loc}]")
+
+    case _ => Doc.text(s"unsupported statement for printing $s")
 
   def expr(e: Expr): Doc = e match
     case i: IntLiteral => Doc.str(i.n)
@@ -52,7 +58,9 @@ object PrettyPrint:
       expr(bop.lhs) + Doc.str(bop.op) + expr(bop.rhs)
     case c: CallExpr =>
       val args = separateComma(c.args.map(expr))
-      Doc.str(c) + ("(" +: args :+ ")")
+      Doc.str(c.name) + ("(" +: args :+ ")")
+    case u: UnsupportedConstruct =>    
+      Doc.text(s"[unsupportedExpr at ${u.loc}]")
 
   def separateComma(ds: List[Doc]): Doc = Doc.fill(Doc.text(", "), ds)
 
