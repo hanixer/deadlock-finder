@@ -110,13 +110,16 @@ private object Visitor extends ASTVisitor:
     stmtsStack.top.addOne(stmt, loc)
 
   def getResultExpr(node: ASTNode): Expr =
-    Option(getResult[Expr](node)).getOrElse(UnsupportedConstruct(mkSourceLoc(node)))
+    Option(getResult[Expr](node))
+      .getOrElse(UnsupportedConstruct(mkSourceLoc(node)))
 
   def getResultSimpleExpr(node: ASTNode): SimpleExpr =
-    Option(getResult[SimpleExpr](node)).getOrElse(UnsupportedConstruct(mkSourceLoc(node)))
+    Option(getResult[SimpleExpr](node))
+      .getOrElse(UnsupportedConstruct(mkSourceLoc(node)))
 
   def getResultStmt(node: ASTNode): Stmt =
-    Option(getResult[Stmt](node)).getOrElse(UnsupportedConstruct(mkSourceLoc(node)))
+    Option(getResult[Stmt](node))
+      .getOrElse(UnsupportedConstruct(mkSourceLoc(node)))
 
   def getResult[A](node: ASTNode): A =
     node.getProperty(TranslateProperty).asInstanceOf[A]
@@ -165,19 +168,38 @@ private object Visitor extends ASTVisitor:
     true
 
   override def endVisit(node: BlockNode): Unit =
-    val stmts = stmtsStack.pop().toList.map((s, l) => if s != null then s else UnsupportedConstruct(l))
+    val stmts = stmtsStack
+      .pop()
+      .toList
+      .map((s, l) => if s != null then s else UnsupportedConstruct(l))
     node.setProperty(TranslateProperty, Block(stmts, mkSourceLoc(node)))
 
-  override def visit(node: IfStatement): Boolean =
-    stmtsStack.push(ListBuffer())
-    true
+  /** Translate body of a statement, like if-then-else or while loop */
+  def translateBody(body: Statement): Stmt =
+    if body.getNodeType == ASTNode.BLOCK then
+      body.accept(this)
+      getResultStmt(body)
+    else
+      stmtsStack.push(ListBuffer())
+      body.accept(this)
+      val stmts = stmtsStack.pop().toList.map(_._1)
+      Block(stmts, mkSourceLoc(body))
 
-  override def endVisit(node: IfStatement): Unit =
+  override def visit(node: IfStatement): Boolean =
+    // Condition
+    node.getExpression.accept(this)
     val cond = getResultSimpleExpr(node.getExpression)
-    val thenStmt = getResultStmt(node.getThenStatement)
-    val elseStmt = Option(node.getElseStatement).map(getResultStmt)
+
+    // Then statement
+    val thenStmt = translateBody(node.getThenStatement)
+
+    // Else statement
+    val elseStmt = Option(node.getElseStatement).map(translateBody)
     val loc = mkSourceLoc(node)
+
     addStmt(IfThenElse(cond, thenStmt, elseStmt, loc), loc)
+
+    false
 
   override def endVisit(node: VariableDeclarationStatement): Unit =
     val typ = translateType(node.getType)
@@ -191,7 +213,7 @@ private object Visitor extends ASTVisitor:
     )
 
     stmtsStack.top.appendAll(varDecls)
-  
+
   override def endVisit(node: ReturnStatement): Unit =
     val expr = Option(node.getExpression).map(getResultSimpleExpr)
     val loc = mkSourceLoc(node)
