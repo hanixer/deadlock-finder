@@ -72,13 +72,15 @@ private object Visitor extends ASTVisitor:
     if tb != null then
       if tb.isPrimitive then
         tb.getName match
-          case "int"    => IntType()
-          case "Double" => DoubleType()
-          case _        => VoidType()
+          case "int"    => IntType
+          case "double" => DoubleType
+          case "float" => FloatType
+          case "boolean" => BooleanType
+          case _        => VoidType
       else ClassType()
     else
       println(s"Unresolved binding")
-      VoidType()
+      VoidType
 
   def translateOperator(op: InfixExpression.Operator): BinaryOp = op match
     case InfixExpression.Operator.PLUS => BinaryOp.Plus
@@ -222,7 +224,7 @@ private object Visitor extends ASTVisitor:
 
     // Make temporary variable if the parent is an expression
     if shouldMakeTemporary(node) then
-      var typ = translateType(node.resolveTypeBinding)
+      var typ = translateType(tb)
       var name = addTempVar(typ, loc, Some(expr))
       node.setProperty(TranslateProperty, Variable(name, loc))
     else node.setProperty(TranslateProperty, expr)

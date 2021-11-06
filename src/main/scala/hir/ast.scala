@@ -66,13 +66,19 @@ case class CallExpr(name: String, args: List[SimpleExpr], loc: SourceLoc)
 
 sealed trait Type
 
-case class IntType() extends Type:
+case object IntType extends Type:
   override def toString: String = "int"
 
-case class DoubleType() extends Type:
+case object DoubleType extends Type:
   override def toString: String = "double"
 
-case class VoidType() extends Type:
+case object FloatType extends Type:
+  override def toString: String = "float"
+
+case object BooleanType extends Type:
+  override def toString: String = "boolean"
+
+case object VoidType extends Type:
   override def toString: String = "void"
 
 case class ClassType() extends Type:
