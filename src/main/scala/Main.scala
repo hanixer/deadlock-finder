@@ -10,7 +10,7 @@ import deadlockFinder.hir.PrettyPrint
 
 object Main:
   def main(args: Array[String]): Unit =
-    val source = java.nio.file.Files.readString(Path.of("examples/showcase/Example3.java"))
+    val source = java.nio.file.Files.readString(Path.of("examples/showcase/Example2.java"))
     val node: CompilationUnit = parseJava(source)
     val res = SourceToHir(node)
     println(PrettyPrint(res))    

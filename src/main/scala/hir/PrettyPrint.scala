@@ -22,7 +22,7 @@ object PrettyPrint:
   def stmt(s: Stmt): Doc = s match
     case b: Block =>
       val body = Doc.fill(Doc.line, b.stmts.map(stmt))
-      ("{" +: Doc.line) + body + (Doc.line :+ "}")
+      (Doc.text("{") + Doc.line + body).nested(2) + (Doc.line :+ "}")
 
     case a: Assignment => (a.lhs + " = ") +: expr(a.rhs)
 
