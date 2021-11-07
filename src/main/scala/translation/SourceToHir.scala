@@ -245,6 +245,22 @@ private object Visitor extends ASTVisitor:
       else node.setProperty(TranslateProperty, expr)
     else ??? // Non-static methods are not implemented
 
+  override def endVisit(node: PrefixExpression): Unit =
+    // TODO: handle increment/decrement
+    val op =
+      if node.getOperator == PrefixExpression.Operator.MINUS then BinaryOp.Minus
+      else BinaryOp.Plus
+
+    val loc = mkSourceLoc(node)
+    val lhs = IntLiteral(0, loc)
+    val rhs = getResultSimpleExpr(node.getOperand)
+
+    val expr = BinaryOpExpr(op, lhs, rhs, loc)
+    val typ = translateType(node.resolveTypeBinding)
+    val name = addTempVar(typ, loc, Some(expr))
+
+    node.setProperty(TranslateProperty, Variable(name, mkSourceLoc(node)))
+
   override def endVisit(node: InfixExpression): Unit =
     val tb = node.resolveTypeBinding
 
