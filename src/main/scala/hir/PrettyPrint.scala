@@ -43,8 +43,13 @@ object PrettyPrint:
       val ifCond = ("if (" +: expr(ite.cond)) :+ ") "
       ifCond + stmt(ite.thenStmt) + elseBranch
 
+    case l: Loop =>
+      Doc.text("loop ") + stmt(l.body)
+
     case r: Return =>
       "return " +: r.expr.map(expr).getOrElse(Doc.empty)
+
+    case b: Break => Doc.text("break")
 
     case u: UnsupportedConstruct =>
       Doc.text(s"[unsupportedStmt at ${u.loc}]")

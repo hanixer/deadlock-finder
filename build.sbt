@@ -10,3 +10,5 @@ idePackagePrefix := Some("deadlockFinder")
 libraryDependencies += "org.eclipse.jdt" % "org.eclipse.jdt.core" % "3.27.0"
 
 libraryDependencies += "org.typelevel" %% "paiges-core" % "0.4.2"
+
+Compile / run / mainClass := Some("deadlockFinder.Main")

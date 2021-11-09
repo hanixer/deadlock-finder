@@ -63,6 +63,7 @@ private object Visitor extends ASTVisitor:
     if p.isInstanceOf[Expression] && p.getNodeType != ASTNode.ASSIGNMENT then
       true
     else if p.getNodeType == ASTNode.IF_STATEMENT then true
+    else if p.getNodeType == ASTNode.WHILE_STATEMENT then true
     else if p.getNodeType == ASTNode.RETURN_STATEMENT then true
     else false
 
@@ -103,11 +104,11 @@ private object Visitor extends ASTVisitor:
   def addTempVar(typ: Type, loc: SourceLoc, rhs: Option[Expr] = None): String =
     tempCounter += 1
     val name = s"t~$tempCounter"
-    addStmt(VarDecl(name, typ, rhs, loc), loc)
+    addStmt(VarDecl(name, typ, rhs, loc))
     name
 
-  def addStmt(stmt: Stmt, loc: SourceLoc): Unit =
-    stmtsStack.top.addOne(stmt, loc)
+  def addStmt(stmt: Stmt): Unit =
+    stmtsStack.top.addOne(stmt, stmt.loc)
 
   def getResultExpr(node: ASTNode): Expr =
     Option(getResult[Expr](node))
@@ -197,7 +198,31 @@ private object Visitor extends ASTVisitor:
     val elseStmt = Option(node.getElseStatement).map(translateBody)
     val loc = mkSourceLoc(node)
 
-    addStmt(IfThenElse(cond, thenStmt, elseStmt, loc), loc)
+    addStmt(IfThenElse(cond, thenStmt, elseStmt, loc))
+
+    false
+
+  override def visit(node: WhileStatement): Boolean =
+    stmtsStack.push(ListBuffer())
+    // Condition
+    node.getExpression.accept(this)
+    val cond = getResultSimpleExpr(node.getExpression)
+    val condLoc = mkSourceLoc(node.getExpression)
+    addStmt(IfThenElse(cond, Break(condLoc), None, condLoc))
+
+    // Body
+    node.getBody.accept(this)
+    val bodyStmts =
+      getResultStmt(node.getBody) match
+        case Block(stmts, _) => stmts
+        case _               => List()
+    bodyStmts.foreach(addStmt)
+
+    val loc = mkSourceLoc(node)
+    
+    val stmts = stmtsStack.pop().toList.map(_._1)
+
+    addStmt(Loop(Block(stmts, loc), loc))
 
     false
 
@@ -217,14 +242,14 @@ private object Visitor extends ASTVisitor:
   override def endVisit(node: ReturnStatement): Unit =
     val expr = Option(node.getExpression).map(getResultSimpleExpr)
     val loc = mkSourceLoc(node)
-    addStmt(Return(expr, loc), loc)
+    addStmt(Return(expr, loc))
 
   override def endVisit(node: ExpressionStatement): Unit =
     node.getExpression match
       case mi: MethodInvocation =>
         val e = mi.getProperty(TranslateProperty).asInstanceOf[CallExpr]
         val loc = mkSourceLoc(node)
-        addStmt(CallStmt(e), loc)
+        addStmt(CallStmt(e))
       case _ =>
 
   override def endVisit(node: MethodInvocation): Unit =
@@ -289,7 +314,7 @@ private object Visitor extends ASTVisitor:
         val name = sn.getIdentifier
         val rhs = getResultExpr(node.getRightHandSide)
         val loc = mkSourceLoc(node)
-        addStmt(Assignment(name, rhs, loc), loc)
+        addStmt(Assignment(name, rhs, loc))
 
   override def visit(node: SimpleName): Boolean =
     var v = Variable(node.getIdentifier, mkSourceLoc(node))

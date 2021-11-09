@@ -34,6 +34,8 @@ case class IfThenElse(
 
 case class While(cond: SimpleExpr, body: Stmt, loc: SourceLoc) extends Stmt
 
+case class Loop(body: Stmt, loc: SourceLoc) extends Stmt
+
 case class Block(stmts: List[Stmt], loc: SourceLoc) extends Stmt
 
 case class Break(loc: SourceLoc) extends Stmt

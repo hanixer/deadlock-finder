@@ -1,0 +1,1 @@
+command = "bloop run deadlock-finder -m deadlockFinder.TranslateHir -- {filename}"
