@@ -202,7 +202,9 @@ private object Visitor extends ASTVisitor:
     node.getExpression.accept(this)
     val cond = getResultSimpleExpr(node.getExpression)
     val condLoc = mkSourceLoc(node.getExpression)
-    addStmt(IfThenElse(cond, Break(condLoc), None, condLoc))
+    val condNot = UnaryExpr(UnaryOp.Not, cond, condLoc)
+    var condVar = Variable(addTempVar(BooleanType, condLoc, Some(condNot)), condLoc)
+    addStmt(IfThenElse(condVar, Break(condLoc), None, condLoc))
 
     // Body
     val bodyStmts = translateBody(node.getBody)
@@ -262,15 +264,22 @@ private object Visitor extends ASTVisitor:
 
   override def endVisit(node: PrefixExpression): Unit =
     // TODO: handle increment/decrement
-    val op =
-      if node.getOperator == PrefixExpression.Operator.MINUS then BinaryOp.Minus
-      else BinaryOp.Plus
-
     val loc = mkSourceLoc(node)
-    val lhs = IntLiteral(0, loc)
-    val rhs = getResultSimpleExpr(node.getOperand)
+    val expr =
+      if node.getOperator == PrefixExpression.Operator.NOT then
+        val op = UnaryOp.Not
+        val e = getResultSimpleExpr(node.getOperand)
+        UnaryExpr(op, e, loc)
+      else 
+        val op =
+          if node.getOperator == PrefixExpression.Operator.MINUS then BinaryOp.Minus
+          else BinaryOp.Plus
 
-    val expr = BinaryOpExpr(op, lhs, rhs, loc)
+        val lhs = IntLiteral(0, loc)
+        val rhs = getResultSimpleExpr(node.getOperand)
+        BinaryExpr(op, lhs, rhs, loc)
+
+
     val typ = translateType(node.resolveTypeBinding)
     val name = addTempVar(typ, loc, Some(expr))
 
@@ -287,7 +296,7 @@ private object Visitor extends ASTVisitor:
     if lhs == null || rhs == null then
       throw new Error(s"lhs or rhs is null at $loc")
 
-    val expr = BinaryOpExpr(op, lhs, rhs, loc)
+    val expr = BinaryExpr(op, lhs, rhs, loc)
 
     // Make temporary variable if the parent is an expression
     if shouldMakeTemporary(node) then

@@ -1,1 +1,2 @@
 command = "cd ../.. & bloop run deadlock-finder -m deadlockFinder.TranslateHir -- test/hir/{filename}"
+diff = "git --no-pager diff --no-index"

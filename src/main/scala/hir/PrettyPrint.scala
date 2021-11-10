@@ -59,13 +59,16 @@ object PrettyPrint:
   def expr(e: Expr): Doc = e match
     case i: IntLiteral => Doc.str(i.n)
     case v: Variable   => Doc.text(v.name)
-    case bop: BinaryOpExpr =>
+    case bop: BinaryExpr =>
       expr(bop.lhs) + Doc.str(bop.op) + expr(bop.rhs)
+    case uop: UnaryExpr =>
+      Doc.str(uop.op) + expr(uop.e)
     case c: CallExpr =>
       val args = separateComma(c.args.map(expr))
       Doc.str(c.name) + ("(" +: args :+ ")")
     case u: UnsupportedConstruct =>    
       Doc.text(s"[unsupportedExpr at ${u.loc}]")
+    case _ => Doc.text(s"unsupported expression for printing $e")
 
   def separateComma(ds: List[Doc]): Doc = Doc.fill(Doc.text(", "), ds)
 

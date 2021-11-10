@@ -56,12 +56,14 @@ case class IntLiteral(n: Int, loc: SourceLoc) extends SimpleExpr
 
 case class Variable(name: String, loc: SourceLoc) extends SimpleExpr
 
-case class BinaryOpExpr(
+case class BinaryExpr(
     op: BinaryOp,
     lhs: SimpleExpr,
     rhs: SimpleExpr,
     loc: SourceLoc
 ) extends Expr
+
+case class UnaryExpr(op: UnaryOp, e: SimpleExpr, loc: SourceLoc) extends Expr
 
 case class CallExpr(name: String, args: List[SimpleExpr], loc: SourceLoc)
     extends Expr
@@ -104,3 +106,9 @@ enum BinaryOp:
     case Equals        => "=="
     case And           => "&&"
     case Or            => "||"
+
+enum UnaryOp:
+  case Not
+
+  override def toString(): String = this match
+    case Not => "!"
