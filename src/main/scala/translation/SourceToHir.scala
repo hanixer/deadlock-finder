@@ -101,11 +101,26 @@ private object Visitor extends ASTVisitor:
       println("Unknown operator: $op")
       BinaryOp.Plus
 
+  def translateBody(node: ASTNode): List[Stmt] =
+    pushStmtStack()
+    node.accept(this)
+    popStmtStack().map(_._1)
+
+  def translateAndWrapBody(node: ASTNode): Block =
+    val stmts = translateBody(node)
+    Block(stmts, mkSourceLoc(node))
+
   def addTempVar(typ: Type, loc: SourceLoc, rhs: Option[Expr] = None): String =
     tempCounter += 1
     val name = s"t~$tempCounter"
     addStmt(VarDecl(name, typ, rhs, loc))
     name
+
+  def pushStmtStack(): Unit =
+    stmtsStack.push(ListBuffer())
+
+  def popStmtStack(): List[(Stmt, SourceLoc)] =
+    stmtsStack.pop().toList
 
   def addStmt(stmt: Stmt): Unit =
     stmtsStack.top.addOne(stmt, stmt.loc)
@@ -155,36 +170,15 @@ private object Visitor extends ASTVisitor:
     val retType = translateType(node.getReturnType2)
 
     // Translate body
-    node.getBody.accept(this)
-    val body = node.getBody.getProperty(TranslateProperty).asInstanceOf[Block]
+    val body = translateAndWrapBody(node.getBody)
 
-    val func =
-      FuncDecl(mkFullName(node), params, retType, body, mkSourceLoc(node))
+    val loc = mkSourceLoc(node)
+
+    val func = FuncDecl(mkFullName(node), params, retType, body, loc)
+
     node.setProperty(TranslateProperty, func)
 
     false
-
-  override def visit(node: BlockNode): Boolean =
-    stmtsStack.push(ListBuffer())
-    true
-
-  override def endVisit(node: BlockNode): Unit =
-    val stmts = stmtsStack
-      .pop()
-      .toList
-      .map((s, l) => if s != null then s else UnsupportedConstruct(l))
-    node.setProperty(TranslateProperty, Block(stmts, mkSourceLoc(node)))
-
-  /** Translate body of a statement, like if-then-else or while loop */
-  def translateBody(body: Statement): Stmt =
-    if body.getNodeType == ASTNode.BLOCK then
-      body.accept(this)
-      getResultStmt(body)
-    else
-      stmtsStack.push(ListBuffer())
-      body.accept(this)
-      val stmts = stmtsStack.pop().toList.map(_._1)
-      Block(stmts, mkSourceLoc(body))
 
   override def visit(node: IfStatement): Boolean =
     // Condition
@@ -192,10 +186,10 @@ private object Visitor extends ASTVisitor:
     val cond = getResultSimpleExpr(node.getExpression)
 
     // Then statement
-    val thenStmt = translateBody(node.getThenStatement)
+    val thenStmt = translateAndWrapBody(node.getThenStatement)
 
     // Else statement
-    val elseStmt = Option(node.getElseStatement).map(translateBody)
+    val elseStmt = Option(node.getElseStatement).map(translateAndWrapBody)
     val loc = mkSourceLoc(node)
 
     addStmt(IfThenElse(cond, thenStmt, elseStmt, loc))
@@ -203,7 +197,7 @@ private object Visitor extends ASTVisitor:
     false
 
   override def visit(node: WhileStatement): Boolean =
-    stmtsStack.push(ListBuffer())
+    pushStmtStack()
     // Condition
     node.getExpression.accept(this)
     val cond = getResultSimpleExpr(node.getExpression)
@@ -211,16 +205,12 @@ private object Visitor extends ASTVisitor:
     addStmt(IfThenElse(cond, Break(condLoc), None, condLoc))
 
     // Body
-    node.getBody.accept(this)
-    val bodyStmts =
-      getResultStmt(node.getBody) match
-        case Block(stmts, _) => stmts
-        case _               => List()
-    bodyStmts.foreach(addStmt)
+    val bodyStmts = translateBody(node.getBody)
+    bodyStmts.foreach(addStmt) // Add all statements to current level
 
     val loc = mkSourceLoc(node)
-    
-    val stmts = stmtsStack.pop().toList.map(_._1)
+
+    val stmts = popStmtStack().map(_._1)
 
     addStmt(Loop(Block(stmts, loc), loc))
 

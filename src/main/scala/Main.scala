@@ -14,7 +14,6 @@ object Main:
     val node: CompilationUnit = parseJava(source)
     val res = SourceToHir(node)
     println(PrettyPrint(res))
-    println(args.toList)
 
   private def parseJava(source: String): CompilationUnit =
     val parser = ASTParser.newParser(AST.JLS16)

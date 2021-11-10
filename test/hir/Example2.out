@@ -1,0 +1,16 @@
+func showcase.Example2.func1(): void {
+  var a: int = 1
+  var b: int = 2
+  var t~1: int = 3*b
+  var c: int = a+t~1
+  var t~2: int = a*b
+  var t~3: int = a*c
+  var d: int = t~2+t~3
+  var t~4: int = a+b
+  var t~5: int = c+d
+  showcase.Example2.func2(t~4, t~5)
+}
+
+func showcase.Example2.func2(x: int, y: int): void {
+  x = x-y
+}
