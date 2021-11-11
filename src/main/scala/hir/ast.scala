@@ -1,13 +1,12 @@
 package deadlockFinder
 package hir
 
-abstract sealed class AstNode {
-  val loc: SourceLoc
-}
+import common.*
 
 case class Program(funcs: List[FuncDecl], loc: SourceLoc = SourceLoc(1, 1))
     extends AstNode
 
+    
 case class FuncDecl(
     name: String,
     params: List[Param],
@@ -17,6 +16,7 @@ case class FuncDecl(
 ) extends AstNode
 
 case class Param(name: String, typ: Type, loc: SourceLoc) extends AstNode
+
 
 trait Stmt extends AstNode
 
@@ -48,6 +48,7 @@ case class CallStmt(callExpr: CallExpr) extends Stmt {
   val loc: SourceLoc = callExpr.loc
 }
 
+
 trait Expr extends AstNode
 
 trait SimpleExpr extends Expr
@@ -69,46 +70,3 @@ case class CallExpr(name: String, args: List[SimpleExpr], loc: SourceLoc)
     extends Expr
 
 case class UnsupportedConstruct(loc: SourceLoc) extends SimpleExpr, Stmt
-
-sealed trait Type
-
-case object IntType extends Type:
-  override def toString: String = "int"
-
-case object DoubleType extends Type:
-  override def toString: String = "double"
-
-case object FloatType extends Type:
-  override def toString: String = "float"
-
-case object BooleanType extends Type:
-  override def toString: String = "boolean"
-
-case object VoidType extends Type:
-  override def toString: String = "void"
-
-case class ClassType() extends Type:
-  override def toString: String = "someClass"
-
-enum BinaryOp:
-  case Plus, Minus, Times, Divide, Less, Greater, LessEquals, GreaterEquals,
-  Equals, And, Or
-
-  override def toString(): String = this match
-    case Plus          => "+"
-    case Minus         => "-"
-    case Times         => "*"
-    case Divide        => "/"
-    case Less          => "<"
-    case Greater       => ">"
-    case LessEquals    => "<="
-    case GreaterEquals => ">="
-    case Equals        => "=="
-    case And           => "&&"
-    case Or            => "||"
-
-enum UnaryOp:
-  case Not
-
-  override def toString(): String = this match
-    case Not => "!"

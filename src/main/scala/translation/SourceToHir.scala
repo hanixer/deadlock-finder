@@ -2,6 +2,7 @@ package deadlockFinder
 package translation
 
 import hir.*
+import common.*
 
 import org.eclipse.jdt.core.dom.{
   Type as TypeNode,

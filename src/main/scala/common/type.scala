@@ -1,3 +1,4 @@
+package deadlockFinder
 package common
 
 sealed trait Type
