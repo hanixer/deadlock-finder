@@ -30,4 +30,5 @@ enum UnaryOp:
   override def toString(): String = this match
     case Not => "!"
 
+case class Param(name: String, typ: Type, loc: SourceLoc) extends AstNode
 

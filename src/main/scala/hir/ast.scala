@@ -15,7 +15,6 @@ case class FuncDecl(
     loc: SourceLoc
 ) extends AstNode
 
-case class Param(name: String, typ: Type, loc: SourceLoc) extends AstNode
 
 
 trait Stmt extends AstNode
