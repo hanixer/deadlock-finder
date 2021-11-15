@@ -1,11 +1,13 @@
 package deadlockFinder
 package common
 
+import org.typelevel.paiges.Doc
+
 case class SourceLoc(line: Int, column: Int)
 
-abstract class AstNode {
+abstract class AstNode:
   val loc: SourceLoc
-}
+  def prettyPrint: Doc
 
 enum BinaryOp:
   case Plus, Minus, Times, Divide, Less, Greater, LessEquals, GreaterEquals,
@@ -30,5 +32,5 @@ enum UnaryOp:
   override def toString(): String = this match
     case Not => "!"
 
-case class Param(name: String, typ: Type, loc: SourceLoc) extends AstNode
-
+case class Param(name: String, typ: Type, loc: SourceLoc) extends AstNode:
+  def prettyPrint: Doc = (name + ": ") +: Doc.str(typ)

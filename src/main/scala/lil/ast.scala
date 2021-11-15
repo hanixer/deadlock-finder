@@ -3,9 +3,12 @@ package lil
 
 import common.*
 import hir.{Expr, SimpleExpr, CallExpr}
+import org.typelevel.paiges.Doc
 
 case class Program(funcs: List[FuncDecl], loc: SourceLoc = SourceLoc(1, 1))
-    extends AstNode
+    extends AstNode:
+  def prettyPrint: Doc =
+    Doc.fill(Doc.line + Doc.line, funcs.map(_.prettyPrint))
 
 case class FuncDecl(
     name: String,
@@ -13,59 +16,49 @@ case class FuncDecl(
     retTyp: Type,
     body: List[Block],
     loc: SourceLoc
-) extends AstNode
+) extends AstNode:
+  def prettyPrint: Doc = Doc.empty
 
 
 trait Stmt extends AstNode
 
-case class Assignment(lhs: String, rhs: Expr, loc: SourceLoc) extends Stmt
+case class Assignment(lhs: String, rhs: Expr, loc: SourceLoc) extends Stmt:
+  def prettyPrint: Doc = Doc.empty
+
 
 case class VarDecl(name: String, t: Type, rhs: Option[Expr], loc: SourceLoc)
-    extends Stmt
+    extends Stmt:
+  def prettyPrint: Doc = Doc.empty
+
 
 case class Block(
     label: String,
     stmts: List[Stmt],
     transfer: Transfer,
     loc: SourceLoc
-) extends Stmt
+) extends Stmt:
+  def prettyPrint: Doc = Doc.empty
 
-case class CallStmt(callExpr: CallExpr) extends Stmt {
+
+case class CallStmt(callExpr: CallExpr) extends Stmt:
   val loc: SourceLoc = callExpr.loc
-}
+  def prettyPrint: Doc = Doc.empty
+
 
 trait Transfer extends Stmt
 
-case class Jump(label: String, loc: SourceLoc) extends Transfer
+case class Jump(label: String, loc: SourceLoc) extends Transfer:
+  def prettyPrint: Doc = Doc.empty
+
 
 case class CondJump(
     cond: SimpleExpr,
     thenLabel: String,
     elseLabel: String,
     loc: SourceLoc
-) extends Transfer
+) extends Transfer:
+  def prettyPrint: Doc = Doc.empty
 
-case class Return(expr: Option[SimpleExpr], loc: SourceLoc) extends Transfer
 
-
-// trait Expr extends AstNode
-
-// trait SimpleExpr extends Expr
-
-// case class IntLiteral(n: Int, loc: SourceLoc) extends SimpleExpr
-
-// case class Variable(name: String, loc: SourceLoc) extends SimpleExpr
-
-// case class BinaryExpr(
-//     op: BinaryOp,
-//     lhs: SimpleExpr,
-//     rhs: SimpleExpr,
-//     loc: SourceLoc
-// ) extends Expr
-
-// case class UnaryExpr(op: UnaryOp, e: SimpleExpr, loc: SourceLoc) extends Expr
-
-// case class CallExpr(name: String, args: List[SimpleExpr], loc: SourceLoc)
-//     extends Expr
-
-// case class UnsupportedConstruct(loc: SourceLoc) extends SimpleExpr, Stmt
+case class Return(expr: Option[SimpleExpr], loc: SourceLoc) extends Transfer:
+  def prettyPrint: Doc = Doc.empty

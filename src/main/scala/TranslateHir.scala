@@ -13,7 +13,7 @@ object TranslateHir:
     val source = java.nio.file.Files.readString(Path.of(args(0)))
     val node: CompilationUnit = parseJava(source)
     val res = SourceToHir(node)
-    println(PrettyPrint(res))
+    println(res.prettyPrint.render(0))
 
   private def parseJava(source: String): CompilationUnit =
     val parser = ASTParser.newParser(AST.JLS16)

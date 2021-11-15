@@ -2,70 +2,106 @@ package deadlockFinder
 package hir
 
 import common.*
+import org.typelevel.paiges.Doc
 
 case class Program(funcs: List[FuncDecl], loc: SourceLoc = SourceLoc(1, 1))
-    extends AstNode
+    extends AstNode:
+  def prettyPrint: Doc =
+    Doc.fill(Doc.line + Doc.line, funcs.map(_.prettyPrint))
 
-    
 case class FuncDecl(
     name: String,
     params: List[Param],
     retTyp: Type,
     body: Block,
     loc: SourceLoc
-) extends AstNode
-
-
+) extends AstNode:
+  def prettyPrint: Doc =
+    val ps = params.map(_.prettyPrint)
+    val pComma = Doc.fill(Doc.text(", "), ps)
+    val b = body.prettyPrint
+    ("func " +: Doc.text(name))
+      + ("(" +: pComma :+ "): ")
+      + Doc.str(retTyp) + Doc.space + b
 
 trait Stmt extends AstNode
 
-case class Assignment(lhs: String, rhs: Expr, loc: SourceLoc) extends Stmt
+case class Assignment(lhs: String, rhs: Expr, loc: SourceLoc) extends Stmt:
+  def prettyPrint: Doc = (lhs + " = ") +: rhs.prettyPrint
 
 case class VarDecl(name: String, t: Type, rhs: Option[Expr], loc: SourceLoc)
-    extends Stmt
+    extends Stmt:
+  def prettyPrint: Doc =
+    var r = rhs match
+      case Some(e) => " = " +: e.prettyPrint
+      case _       => Doc.empty
+    ("var " + name + ": ") +: (Doc.str(t) + r)
 
 case class IfThenElse(
     cond: SimpleExpr,
     thenStmt: Stmt,
     elseStmt: Option[Stmt],
     loc: SourceLoc
-) extends Stmt
+) extends Stmt:
+  def prettyPrint: Doc =
+    val elseBranch = elseStmt match
+      case Some(s) => " else " +: s.prettyPrint
+      case _       => Doc.empty
+    val ifCond = ("if (" +: cond.prettyPrint) :+ ") "
+    ifCond + thenStmt.prettyPrint + elseBranch
 
-case class While(cond: SimpleExpr, body: Stmt, loc: SourceLoc) extends Stmt
+case class Loop(body: Stmt, loc: SourceLoc) extends Stmt:
+  def prettyPrint: Doc = Doc.text("loop ") + body.prettyPrint
 
-case class Loop(body: Stmt, loc: SourceLoc) extends Stmt
+case class Block(stmts: List[Stmt], loc: SourceLoc) extends Stmt:
+  def prettyPrint: Doc =
+    val b = Doc.fill(Doc.line, stmts.map(_.prettyPrint))
+    (Doc.text("{") + Doc.line + b).nested(2) + (Doc.line :+ "}")
 
-case class Block(stmts: List[Stmt], loc: SourceLoc) extends Stmt
+case class Break(loc: SourceLoc) extends Stmt:
+  def prettyPrint: Doc = Doc.text("break")
 
-case class Break(loc: SourceLoc) extends Stmt
+case class Continue(loc: SourceLoc) extends Stmt:
+  def prettyPrint: Doc = Doc.text("continue")
 
-case class Continue(loc: SourceLoc) extends Stmt
+case class Return(expr: Option[Expr], loc: SourceLoc) extends Stmt:
+  def prettyPrint: Doc =
+    "return " +: expr.map(_.prettyPrint).getOrElse(Doc.empty)
 
-case class Return(expr: Option[Expr], loc: SourceLoc) extends Stmt
-
-case class CallStmt(callExpr: CallExpr) extends Stmt {
+case class CallStmt(callExpr: CallExpr) extends Stmt:
   val loc: SourceLoc = callExpr.loc
-}
+  def prettyPrint: Doc =
+    val args = Doc.fill(Doc.text(", "), callExpr.args.map(_.prettyPrint))
+    (callExpr.name + "(") +: (args :+ ")")
 
 
 trait Expr extends AstNode
 
 trait SimpleExpr extends Expr
 
-case class IntLiteral(n: Int, loc: SourceLoc) extends SimpleExpr
+case class IntLiteral(n: Int, loc: SourceLoc) extends SimpleExpr:
+  def prettyPrint: Doc = Doc.str(n)
 
-case class Variable(name: String, loc: SourceLoc) extends SimpleExpr
+case class Variable(name: String, loc: SourceLoc) extends SimpleExpr:
+  def prettyPrint: Doc = Doc.text(name)
 
 case class BinaryExpr(
     op: BinaryOp,
     lhs: SimpleExpr,
     rhs: SimpleExpr,
     loc: SourceLoc
-) extends Expr
+) extends Expr:
+  def prettyPrint: Doc = lhs.prettyPrint + Doc.str(op) + rhs.prettyPrint
 
-case class UnaryExpr(op: UnaryOp, e: SimpleExpr, loc: SourceLoc) extends Expr
+case class UnaryExpr(op: UnaryOp, e: SimpleExpr, loc: SourceLoc) extends Expr:
+  def prettyPrint: Doc = Doc.str(op) + e.prettyPrint
 
 case class CallExpr(name: String, args: List[SimpleExpr], loc: SourceLoc)
-    extends Expr
+    extends Expr:
+  def prettyPrint: Doc = 
+    val a = Doc.fill(Doc.text(", "), args.map(_.prettyPrint))
+    Doc.str(name) + ("(" +: a :+ ")")
 
-case class UnsupportedConstruct(loc: SourceLoc) extends SimpleExpr, Stmt
+case class UnsupportedConstruct(loc: SourceLoc) extends SimpleExpr, Stmt:
+  def prettyPrint: Doc = Doc.text(s"[unsupported stmt or expr at ${loc}]")
+
