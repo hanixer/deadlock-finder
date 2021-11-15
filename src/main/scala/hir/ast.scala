@@ -18,7 +18,7 @@ case class FuncDecl(
 ) extends AstNode:
   def prettyPrint: Doc =
     val ps = params.map(_.prettyPrint)
-    val pComma = Doc.fill(Doc.text(", "), ps)
+    val pComma = PrettyPrint.separateComma(ps)
     val b = body.prettyPrint
     ("func " +: Doc.text(name))
       + ("(" +: pComma :+ "): ")
@@ -71,7 +71,7 @@ case class Return(expr: Option[Expr], loc: SourceLoc) extends Stmt:
 case class CallStmt(callExpr: CallExpr) extends Stmt:
   val loc: SourceLoc = callExpr.loc
   def prettyPrint: Doc =
-    val args = Doc.fill(Doc.text(", "), callExpr.args.map(_.prettyPrint))
+    val args = PrettyPrint.separateComma(callExpr.args.map(_.prettyPrint))
     (callExpr.name + "(") +: (args :+ ")")
 
 
@@ -99,7 +99,7 @@ case class UnaryExpr(op: UnaryOp, e: SimpleExpr, loc: SourceLoc) extends Expr:
 case class CallExpr(name: String, args: List[SimpleExpr], loc: SourceLoc)
     extends Expr:
   def prettyPrint: Doc = 
-    val a = Doc.fill(Doc.text(", "), args.map(_.prettyPrint))
+    val a = PrettyPrint.separateComma(args.map(_.prettyPrint))
     Doc.str(name) + ("(" +: a :+ ")")
 
 case class UnsupportedConstruct(loc: SourceLoc) extends SimpleExpr, Stmt:

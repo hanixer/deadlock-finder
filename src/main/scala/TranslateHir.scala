@@ -6,7 +6,6 @@ import translation.SourceToHir
 import org.eclipse.jdt.core.dom.*
 
 import java.nio.file.Path
-import deadlockFinder.hir.PrettyPrint
 
 object TranslateHir:
   def main(args: Array[String]): Unit =
@@ -25,4 +24,3 @@ object TranslateHir:
     parser.createAST(null).asInstanceOf[CompilationUnit]
 
 end TranslateHir
-
