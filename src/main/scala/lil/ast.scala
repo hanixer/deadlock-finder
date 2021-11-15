@@ -69,7 +69,9 @@ case class CondJump(
     elseLabel: String,
     loc: SourceLoc
 ) extends Transfer:
-  def prettyPrint: Doc = Doc.text(s"condJump $cond $thenLabel $elseLabel")
+  def prettyPrint: Doc =
+    val c = cond.prettyPrint
+    Doc.text("condJump ") + c + Doc.text(s" $thenLabel $elseLabel")
 
 case class Return(expr: Option[SimpleExpr], loc: SourceLoc) extends Transfer:
   def prettyPrint: Doc =

@@ -2,18 +2,22 @@ package deadlockFinder
 package translation
 
 import lil.*
+
 import scala.collection.mutable.ListBuffer
 import deadlockFinder.hir.IfThenElse
+
 import scala.collection.mutable.Stack
 import deadlockFinder.common.VoidType
+
+import scala.annotation.tailrec
 
 class HirToLil:
   val blockStmts: ListBuffer[Stmt] = ListBuffer()
   val blocks: ListBuffer[Block] = ListBuffer()
-  var currLabel = mkLabel()
+  var labelCount: Int = 0
+  var currLabel: String = mkLabel()
   var loopStack: Stack[(String, String)] =
     Stack() // Stack of (loopStart, loopEnd) pairs
-  var labelCount: Int = 0
 
   def translateFunc(func: hir.FuncDecl): FuncDecl =
     translateStmt(func.body, "end")
@@ -59,8 +63,9 @@ class HirToLil:
 
   def translateBlock(b: hir.Block, next: String): Unit =
     val size = b.stmts.length
+    @tailrec
     def iter(stmts: List[hir.Stmt], i: Int): Unit =
-      if !stmts.isEmpty then
+      if stmts.nonEmpty then
         val isLast = i == size - 1
         val stmt = stmts.head
         if isControlStmt(stmt) then
@@ -69,7 +74,8 @@ class HirToLil:
             translateStmt(stmt, newNext)
             currLabel = newNext
             iter(stmts.tail, i + 1)
-          else translateStmt(stmt, next)
+          else
+            translateStmt(stmt, next)
         else
           translateStmt(stmt, next)
           if isLast then
