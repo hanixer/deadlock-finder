@@ -43,20 +43,33 @@ class HirToLil:
       finishBlock(CondJump(i.cond, thenLabel, elseLabel, i.loc))
       // Then branch
       currLabel = thenLabel
-      blockStmts.clear
+      blockStmts.clear()
       translateStmt(i.thenStmt, next)
       
       // Else branch, if present
       if i.elseStmt.isDefined then
         currLabel = elseLabel
-        blockStmts.clear
+        blockStmts.clear()
         translateStmt(i.elseStmt.get, next)
+
+    case l: hir.Loop =>
+      val startLabel = mkLabel()
+      loopStack.push((startLabel, next))
+      currLabel = startLabel
+      blockStmts.clear()
+      translateStmt(l.body, startLabel)
+      loopStack.pop()
 
     case v: hir.VarDecl =>
       addStmt(VarDecl(v.name, v.t, v.rhs, v.loc))
 
     case a: hir.Assignment =>
       addStmt(Assignment(a.lhs, a.rhs, a.loc))
+
+    case b: hir.Break =>
+      if loopStack.isEmpty then throw new Error(s"Break is used without loop at ${b.loc}")
+      val label = loopStack.top._2
+      finishBlock(Jump(label, b.loc))
 
     case _ =>
       ???
