@@ -10,7 +10,7 @@ import java.nio.file.Path
 
 object Main:
   def main(args: Array[String]): Unit =
-    val file = "examples/showcase/Example1.java"
+    val file = "test/lil/Example2.java"
     val node: CompilationUnit = JavaParser.parseFile(file)
     val hir = SourceToHir(node)
     val lil = HirToLil(hir)

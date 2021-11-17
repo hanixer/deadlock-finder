@@ -25,8 +25,7 @@ class HirToLil:
     FuncDecl(func.name, func.params, func.retTyp, blocks.toList, func.loc)    
 
   def addEndBlock(func: hir.FuncDecl): Unit =
-    currLabel = "end"
-    blockStmts.clear
+    startBlock("end")
     val loc = func.loc
     if func.retTyp != VoidType then
       finishBlock(Return(Some(hir.Variable("~retVal", loc)), loc))
@@ -42,21 +41,19 @@ class HirToLil:
       val elseLabel = if i.elseStmt.isDefined then mkLabel() else next
       finishBlock(CondJump(i.cond, thenLabel, elseLabel, i.loc))
       // Then branch
-      currLabel = thenLabel
-      blockStmts.clear()
+      startBlock(thenLabel)
       translateStmt(i.thenStmt, next)
       
       // Else branch, if present
       if i.elseStmt.isDefined then
-        currLabel = elseLabel
-        blockStmts.clear()
+        startBlock(elseLabel)
         translateStmt(i.elseStmt.get, next)
 
     case l: hir.Loop =>
       val startLabel = mkLabel()
       loopStack.push((startLabel, next))
-      currLabel = startLabel
-      blockStmts.clear()
+      finishBlock(Jump(startLabel, l.loc))
+      startBlock(startLabel)
       translateStmt(l.body, startLabel)
       loopStack.pop()
 
@@ -115,6 +112,12 @@ class HirToLil:
   def addStmt(stmt: Stmt): Unit =
     blockStmts.addOne(stmt)
 
+  def startBlock(label: String): Unit =
+    if blockStmts.nonEmpty then
+      println(s"Start block $label while stmts buffer is not empty")
+    currLabel = label
+    blockStmts.clear()
+  
   def finishBlock(transfer: Transfer): Unit =
     val stmts = blockStmts.toList
     blockStmts.clear
