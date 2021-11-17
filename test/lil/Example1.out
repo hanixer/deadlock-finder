@@ -1,0 +1,15 @@
+func showcase.Example1.func1(): void
+bb2: 
+var t~1: boolean = x<100
+var t~2: boolean = !t~1
+condJump t~2 bb4 bb3
+
+bb4: 
+jump end
+
+bb3: 
+x = x+1
+jump bb2
+
+end: 
+return 

@@ -11,4 +11,7 @@ libraryDependencies += "org.eclipse.jdt" % "org.eclipse.jdt.core" % "3.27.0"
 
 libraryDependencies += "org.typelevel" %% "paiges-core" % "0.4.2"
 
+// https://mvnrepository.com/artifact/org.scalatest/scalatest
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9" % Test
+
 Compile / run / mainClass := Some("deadlockFinder.Main")
