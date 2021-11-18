@@ -204,12 +204,13 @@ private object Visitor extends ASTVisitor:
     val cond = getResultSimpleExpr(node.getExpression)
     val condLoc = mkSourceLoc(node.getExpression)
     val condNot = UnaryExpr(UnaryOp.Not, cond, condLoc)
-    var condVar = Variable(addTempVar(BooleanType, condLoc, Some(condNot)), condLoc)
+    var condVar =
+      Variable(addTempVar(BooleanType, condLoc, Some(condNot)), condLoc)
     addStmt(IfThenElse(condVar, Break(condLoc), None, condLoc))
 
     // Body
     val bodyStmts = translateBody(node.getBody)
-    bodyStmts.foreach(addStmt) // Add all statements to current level
+    bodyStmts.foreach(addStmt) // Add all statements to the current level
 
     val loc = mkSourceLoc(node)
 
@@ -279,15 +280,15 @@ private object Visitor extends ASTVisitor:
         val op = UnaryOp.Not
         val e = getResultSimpleExpr(node.getOperand)
         UnaryExpr(op, e, loc)
-      else 
+      else
         val op =
-          if node.getOperator == PrefixExpression.Operator.MINUS then BinaryOp.Minus
+          if node.getOperator == PrefixExpression.Operator.MINUS then
+            BinaryOp.Minus
           else BinaryOp.Plus
 
         val lhs = IntLiteral(0, loc)
         val rhs = getResultSimpleExpr(node.getOperand)
         BinaryExpr(op, lhs, rhs, loc)
-
 
     val typ = translateType(node.resolveTypeBinding)
     val name = addTempVar(typ, loc, Some(expr))

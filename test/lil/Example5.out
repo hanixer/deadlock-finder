@@ -1,0 +1,17 @@
+func showcase.Example2.func1(): void
+bb1: 
+var a: int = 1
+var b: int = 2
+showcase.Example2.func2(a, c)
+jump end
+
+end: 
+return 
+
+func showcase.Example2.func2(x: int, y: int): void
+bb1: 
+x = x-y
+jump end
+
+end: 
+return 

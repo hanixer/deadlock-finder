@@ -78,8 +78,8 @@ class HirToLil:
       val label = loopStack.top._1
       finishBlock(Jump(label, c.loc))
 
-    case _ =>
-      ???
+    case c: hir.CallStmt =>
+      addStmt(CallStmt(c.callExpr))
 
   def translateBlock(b: hir.Block, next: String): Unit =
     val size = b.stmts.length
