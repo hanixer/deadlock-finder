@@ -49,10 +49,14 @@ class HirToLil:
         translateStmt(i.elseStmt.get, next)
 
     case l: hir.Loop =>
-      val startLabel = mkLabel()
+      val isNewBlock = blockStmts.nonEmpty
+      val startLabel = if isNewBlock then mkLabel() else currLabel
       loopStack.push((startLabel, next))
-      finishBlock(Jump(startLabel, l.loc))
-      startBlock(startLabel)
+
+      if isNewBlock then
+        finishBlock(Jump(startLabel, l.loc))
+        startBlock(startLabel)
+
       translateStmt(l.body, startLabel)
       loopStack.pop()
 
@@ -91,8 +95,7 @@ class HirToLil:
             currLabel = newNext
             iter(stmts.tail, i + 1)
           else translateStmt(stmt, next)
-        else if isBreakOrContinue(stmt) then
-          translateStmt(stmt, next)
+        else if isBreakOrContinue(stmt) then translateStmt(stmt, next)
         else
           translateStmt(stmt, next)
           if isLast then
