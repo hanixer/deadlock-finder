@@ -1,20 +1,9 @@
-func showcase.Example2.func1(): void {
-  var x: int = 6
-  var y: int = 3
-  loop {
-    var t~1: boolean = x<100
-    var t~2: boolean = !t~1
-    if (t~2) break
-    x = x+1
-    loop {
-      var t~3: boolean = x>4
-      var t~4: boolean = !t~3
-      if (t~4) break
-      x = x-1
-    }
-  }
-}
 func showcase.Example2.func1(): void
+bb1: 
+var x: int = 6
+var y: int = 3
+jump bb2
+
 bb2: 
 var t~1: boolean = x<100
 var t~2: boolean = !t~1
@@ -22,6 +11,10 @@ condJump t~2 bb4 bb3
 
 bb4: 
 jump end
+
+bb3: 
+x = x+1
+jump bb5
 
 bb5: 
 var t~3: boolean = x>4

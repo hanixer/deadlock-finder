@@ -1,4 +1,8 @@
 func showcase.Example1.func1(): void
+bb1: 
+var x: int = 6
+jump bb2
+
 bb2: 
 var t~1: boolean = x<100
 var t~2: boolean = !t~1
