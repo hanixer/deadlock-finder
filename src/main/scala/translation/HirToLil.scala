@@ -22,15 +22,14 @@ class HirToLil:
   def translateFunc(func: hir.FuncDecl): FuncDecl =
     translateStmt(func.body, "end")
     addEndBlock(func)
-    FuncDecl(func.name, func.params, func.retTyp, blocks.toList, func.loc)    
+    FuncDecl(func.name, func.params, func.retTyp, blocks.toList, func.loc)
 
   def addEndBlock(func: hir.FuncDecl): Unit =
     startBlock("end")
     val loc = func.loc
     if func.retTyp != VoidType then
       finishBlock(Return(Some(hir.Variable("~retVal", loc)), loc))
-    else
-      finishBlock(Return(None, loc))
+    else finishBlock(Return(None, loc))
 
   def translateStmt(stmt: hir.Stmt, next: String): Unit = stmt match
     case b: hir.Block =>
@@ -43,7 +42,7 @@ class HirToLil:
       // Then branch
       startBlock(thenLabel)
       translateStmt(i.thenStmt, next)
-      
+
       // Else branch, if present
       if i.elseStmt.isDefined then
         startBlock(elseLabel)
@@ -64,9 +63,16 @@ class HirToLil:
       addStmt(Assignment(a.lhs, a.rhs, a.loc))
 
     case b: hir.Break =>
-      if loopStack.isEmpty then throw new Error(s"Break is used without loop at ${b.loc}")
+      if loopStack.isEmpty then
+        throw new Error(s"break is used without loop at ${b.loc}")
       val label = loopStack.top._2
       finishBlock(Jump(label, b.loc))
+
+    case c: hir.Continue =>
+      if loopStack.isEmpty then
+        throw new Error(s"continue is used without loop at ${c.loc}")
+      val label = loopStack.top._1
+      finishBlock(Jump(label, c.loc))
 
     case _ =>
       ???
@@ -84,15 +90,15 @@ class HirToLil:
             translateStmt(stmt, newNext)
             currLabel = newNext
             iter(stmts.tail, i + 1)
-          else
-            translateStmt(stmt, next)
+          else translateStmt(stmt, next)
+        else if isBreakOrContinue(stmt) then
+          translateStmt(stmt, next)
         else
           translateStmt(stmt, next)
           if isLast then
             val j = Jump(next, b.loc)
             finishBlock(j)
-          else
-            iter(stmts.tail, i + 1)
+          else iter(stmts.tail, i + 1)
 
     iter(b.stmts, 0)
 
@@ -109,6 +115,11 @@ class HirToLil:
     case l: hir.Loop       => true
     case _                 => false
 
+  def isBreakOrContinue(stmt: hir.Stmt): Boolean = stmt match
+    case i: hir.Break    => true
+    case l: hir.Continue => true
+    case _               => false
+
   def addStmt(stmt: Stmt): Unit =
     blockStmts.addOne(stmt)
 
@@ -117,7 +128,7 @@ class HirToLil:
       println(s"Start block $label while stmts buffer is not empty")
     currLabel = label
     blockStmts.clear()
-  
+
   def finishBlock(transfer: Transfer): Unit =
     val stmts = blockStmts.toList
     blockStmts.clear
@@ -129,6 +140,6 @@ class HirToLil:
     s"bb$labelCount"
 
 object HirToLil:
-  def apply(hprog: hir.Program): Program =    
+  def apply(hprog: hir.Program): Program =
     val funcs = hprog.funcs.map(f => new HirToLil().translateFunc(f))
     Program(funcs, hprog.loc)

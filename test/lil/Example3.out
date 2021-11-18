@@ -1,0 +1,35 @@
+func showcase.Example7.func1(a: int, b: int): void
+bb1: 
+var c: int = 0
+jump bb2
+
+bb2: 
+var t~1: boolean = a<b
+var t~2: boolean = !t~1
+condJump t~2 bb4 bb3
+
+bb4: 
+jump end
+
+bb3: 
+var t~3: boolean = a==2
+condJump t~3 bb6 bb5
+
+bb6: 
+jump bb2
+
+bb5: 
+var t~4: int = 2*a
+var t~5: boolean = b==t~4
+condJump t~5 bb8 bb7
+
+bb8: 
+jump end
+
+bb7: 
+c = c-a
+b = b*1
+jump bb2
+
+end: 
+return 

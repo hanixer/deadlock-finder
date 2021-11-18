@@ -1,0 +1,19 @@
+func showcase.Example7.func1(a: int, b: int): void {
+  var c: int = 0
+  loop {
+    var t~1: boolean = a<b
+    var t~2: boolean = !t~1
+    if (t~2) break
+    var t~3: boolean = a==2
+    if (t~3) {
+      continue
+    }
+    var t~4: int = 2*a
+    var t~5: boolean = b==t~4
+    if (t~5) {
+      break
+    }
+    c = c-a
+    b = b*1
+  }
+}

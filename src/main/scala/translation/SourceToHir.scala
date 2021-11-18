@@ -237,6 +237,14 @@ private object Visitor extends ASTVisitor:
     val loc = mkSourceLoc(node)
     addStmt(Return(expr, loc))
 
+  override def endVisit(node: ContinueStatement): Unit =
+    val loc = mkSourceLoc(node)
+    addStmt(Continue(loc))
+
+  override def endVisit(node: BreakStatement): Unit =
+    val loc = mkSourceLoc(node)
+    addStmt(Break(loc))
+
   override def endVisit(node: ExpressionStatement): Unit =
     node.getExpression match
       case mi: MethodInvocation =>

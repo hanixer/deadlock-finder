@@ -15,7 +15,6 @@ object TranslateLil:
     val node: CompilationUnit = JavaParser.parseFile(file)
     val hir = SourceToHir(node)
     val lil = HirToLil(hir)
-    println(PrettyPrint(hir))
     println(PrettyPrint(lil))
 
 end TranslateLil
