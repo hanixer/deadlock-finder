@@ -22,18 +22,16 @@ object CfgGraph:
 
     val preds, succs: NodesMap = mutable.Map()
 
-    def getList(map: NodesMap, k: String): mutable.ListBuffer[String] =
-      val v = map.get(k)
-      if v.isEmpty then
-        val l = mutable.ListBuffer[String]()
-        map(k) = l
-        l
-      else v.get
-
     def addEdge(from: String, to: String): Unit =
-      getList(preds, to).addOne(from)
-      getList(succs, from).addOne(to)
+      preds(to).addOne(from)
+      succs(from).addOne(to)
 
+    // Initialize lists
+    for b <- func.body do
+      preds(b.label) = mutable.ListBuffer()
+      succs(b.label) = mutable.ListBuffer()
+
+    // Create edges for each block
     for b <- func.body do
       b.transfer match
         case j: Jump => addEdge(b.label, j.label)
