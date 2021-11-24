@@ -6,7 +6,11 @@ import scala.collection.mutable
 
 /** Represents controlflow graph (CFG) of a function.
   */
-class CfgGraph(val preds: Map[String, List[String]], succs: Map[String, List[String]]):
+class CfgGraph(
+    preds: Map[String, List[String]],
+    succs: Map[String, List[String]],
+    val entry: String
+):
 
   /** Returns a list of predecessors of the given node. */
   def getPreds(node: String): List[String] =
@@ -15,6 +19,8 @@ class CfgGraph(val preds: Map[String, List[String]], succs: Map[String, List[Str
   /** Returns a list of successors of the given node. */
   def getSuccs(node: String): List[String] =
     succs(node)
+
+  def getAllNodes: List[String] = preds.keys.toList
 
 object CfgGraph:
   def apply(func: FuncDecl): CfgGraph =
@@ -39,8 +45,8 @@ object CfgGraph:
           addEdge(b.label, j.thenLabel)
           addEdge(b.label, j.elseLabel)
         case _ =>
-    
-    def toImmutable(map: NodesMap) = 
-      map.map((k,v) => (k, v.toList)).toMap
 
-    new CfgGraph(toImmutable(preds), toImmutable(succs))
+    def toImmutable(map: NodesMap) =
+      map.map((k, v) => (k, v.toList)).toMap
+
+    new CfgGraph(toImmutable(preds), toImmutable(succs), func.body.head.label)
