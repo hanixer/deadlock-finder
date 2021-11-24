@@ -12,7 +12,7 @@ object JavaParser:
     val source = Files.readString(file)
     parse(source)
   
-  private def parse(source: String): CompilationUnit =
+  def parse(source: String): CompilationUnit =
     val parser = ASTParser.newParser(AST.JLS16)
     parser.setSource(source.toCharArray)
     parser.setKind(ASTParser.K_COMPILATION_UNIT)
