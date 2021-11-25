@@ -12,7 +12,6 @@ object Dominators:
     val Undefined = -1
 
     val rposta = rpostOrder(cfg).toArray
-    println(rposta.zipWithIndex.map((n, i) => s"$n:$i").mkString(","))
 
     val nodeToInd = rposta.zipWithIndex.toMap
     val doms = Array.fill(rposta.length)(Undefined)
@@ -27,16 +26,18 @@ object Dominators:
     def intersectPreds(newIdom: Int, preds: List[Int]): Int = preds match
       case p :: rest =>
         if newIdom == Undefined then
-          // Find initial processed predecessor
+          // Find first processed predecessor.
           if doms(p) != Undefined then intersectPreds(p, rest)
           else intersectPreds(newIdom, rest)
-        else if doms(p) != Undefined then
-          // Intersect with current idom, go to next predecessor.
+        else if doms(p) != Undefined then          
           intersectPreds(intersect(newIdom, p), rest)
-        else intersectPreds(newIdom, rest)
+        else 
+          // Predecessor is not processed, skip it.
+          intersectPreds(newIdom, rest)
       case _ => newIdom
 
     def intersect(n1: Int, n2: Int): Int =
+      // "Climb" up the dominator tree.
       if n1 > n2 then intersect(doms(n1), n2)
       else if n2 > n1 then intersect(n1, doms(n2))
       else n1
@@ -45,18 +46,36 @@ object Dominators:
 
     while changed do
       changed = false
-      // Skip node 0 which is the root.
+      // Skip node 0 which is the entry node.
       for node <- 1 until rposta.length do
-        println(s"${rposta(node)}:$node")
         val newIdom = intersectPreds(Undefined, preds(node))
         if doms(node) != newIdom then
           doms(node) = newIdom
-          println(
-            doms.zipWithIndex.map((n, i) => s"${rposta(i)}:$n").mkString(",")
-          )
           changed = true
 
     doms.zipWithIndex.map((idom, node) => (rposta(node), rposta(idom))).toMap
+
+  /**
+   * Find dominance frontier for each node in CFG.
+   * Return a map from a node to its dominance frontier.
+   */
+  def findDominanceFrontiers(cfg: CfgGraph): Map[String, Set[String]] =
+    val df = mutable.Map[String, mutable.Set[String]]()
+    for node <- cfg.getAllNodes do df(node) = mutable.Set()
+
+    val doms = findImmediateDominators(cfg)
+    val joins = cfg.getAllNodes.filter(n => cfg.getPreds(n).length > 1)
+
+    def walkUpDoms(join: String, idom: String, curr: String): Unit =
+      if curr != idom then
+        df(curr).addOne(join)
+        walkUpDoms(join, idom, doms(curr))
+
+    for join <- joins do
+      for pred <- cfg.getPreds(join) do 
+        walkUpDoms(join, doms(join), pred)
+
+    df.map((k, v) => (k, v.toSet)).toMap
 
   def rpostOrder(cfg: CfgGraph): List[String] =
     val list = mutable.ListBuffer[String]()
