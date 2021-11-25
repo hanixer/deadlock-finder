@@ -23,10 +23,27 @@ class CfgGraph(
   def getAllNodes: List[String] = preds.keys.toList
 
 object CfgGraph:
-  def apply(func: FuncDecl): CfgGraph =
-    type NodesMap = mutable.Map[String, mutable.ListBuffer[String]]
+  type BuilderMap = mutable.Map[String, mutable.ListBuffer[String]]
+  def toImmutable(map: BuilderMap) =
+    map.map((k, v) => (k, v.toList)).toMap
 
-    val preds, succs: NodesMap = mutable.Map()
+  class Builder(nodes: List[String]):
+    val preds, succs: BuilderMap = mutable.Map()
+    for n <- nodes do
+      preds(n) = mutable.ListBuffer()
+      succs(n) = mutable.ListBuffer()
+
+    def addEdge(from: String, to: String): Unit =
+      preds(to).addOne(from)
+      succs(from).addOne(to)
+
+    def getPreds = toImmutable(preds)
+    def getSuccs = toImmutable(succs)
+
+  // TODO: refactor
+  def apply(func: FuncDecl): CfgGraph =
+
+    val preds, succs: BuilderMap = mutable.Map()
 
     def addEdge(from: String, to: String): Unit =
       preds(to).addOne(from)
@@ -46,7 +63,13 @@ object CfgGraph:
           addEdge(b.label, j.elseLabel)
         case _ =>
 
-    def toImmutable(map: NodesMap) =
-      map.map((k, v) => (k, v.toList)).toMap
-
     new CfgGraph(toImmutable(preds), toImmutable(succs), func.body.head.label)
+
+  def apply(
+      nodes: List[String],
+      edges: List[(String, String)],
+      entry: String
+  ): CfgGraph =
+    val builder = new Builder(nodes)
+    for (from, to) <- edges do builder.addEdge(from, to)
+    new CfgGraph(builder.getPreds, builder.getSuccs, entry)
