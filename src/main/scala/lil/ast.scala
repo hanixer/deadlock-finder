@@ -2,7 +2,7 @@ package deadlockFinder
 package lil
 
 import common.*
-import hir.{Expr, SimpleExpr, CallExpr}
+import hir.{Expr, SimpleExpr, CallExpr, Variable}
 import org.typelevel.paiges.Doc
 
 case class Program(funcs: List[FuncDecl], loc: SourceLoc = SourceLoc(1, 1))
@@ -20,11 +20,10 @@ case class FuncDecl(
   def prettyPrint: Doc =
     val ps = params.map(_.prettyPrint)
     val pComma = PrettyPrint.separateComma(ps)
-    val b = Doc.fill(Doc.line + Doc.line,  body.map(_.prettyPrint))
+    val b = Doc.fill(Doc.line + Doc.line, body.map(_.prettyPrint))
     ("func " +: Doc.text(name))
       + ("(" +: pComma :+ "): ")
       + Doc.str(retTyp) + Doc.line + b
-
 
 trait Stmt extends AstNode
 
@@ -36,9 +35,8 @@ case class VarDecl(name: String, t: Type, rhs: Option[Expr], loc: SourceLoc)
   def prettyPrint: Doc =
     val r = rhs match
       case Some(e) => " = " +: e.prettyPrint
-      case _ => Doc.empty
+      case _       => Doc.empty
     ("var " + name + ": ") +: (Doc.str(t) + r)
-
 
 case class Block(
     label: String,
@@ -57,22 +55,37 @@ case class CallStmt(callExpr: CallExpr) extends Stmt:
     val args = PrettyPrint.separateComma(callExpr.args.map(_.prettyPrint))
     (callExpr.name + "(") +: (args :+ ")")
 
-
 trait Transfer extends Stmt
 
-case class Jump(label: String, loc: SourceLoc) extends Transfer:
+case class Jump(label: String, vars: List[Variable], loc: SourceLoc)
+    extends Transfer:
   def prettyPrint: Doc = Doc.text(s"jump $label")
+
+object Jump:
+  def apply(label: String, loc: SourceLoc): Jump = Jump(label, List(), loc)
 
 case class CondJump(
     cond: SimpleExpr,
     thenLabel: String,
+    thenArgs: List[Variable],
     elseLabel: String,
+    elseArgs: List[Variable],
     loc: SourceLoc
 ) extends Transfer:
   def prettyPrint: Doc =
     val c = cond.prettyPrint
     Doc.text("condJump ") + c + Doc.text(s" $thenLabel $elseLabel")
 
+object CondJump:
+  def apply(
+      cond: SimpleExpr,
+      thenLabel: String,
+      elseLabel: String,
+      loc: SourceLoc
+  ): CondJump = CondJump(cond, thenLabel, Nil, elseLabel, Nil, loc)
+
 case class Return(expr: Option[SimpleExpr], loc: SourceLoc) extends Transfer:
   def prettyPrint: Doc =
     "return " +: expr.map(_.prettyPrint).getOrElse(Doc.empty)
+
+// case class SsaVariable(name: String, index: Int) extends Variable/
