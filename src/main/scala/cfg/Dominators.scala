@@ -3,7 +3,10 @@ package cfg
 
 import scala.collection.mutable
 
+type DominanceFrontiers = Map[String, Set[String]]
+
 object Dominators:
+  
 
   /** Returns map from a node to its immediate dominator. Implementation of an
     * algorithm by Keith D. Cooper.
@@ -59,7 +62,7 @@ object Dominators:
    * Find dominance frontier for each node in CFG.
    * Return a map from a node to its dominance frontier.
    */
-  def findDominanceFrontiers(cfg: CfgGraph): Map[String, Set[String]] =
+  def findDominanceFrontiers(cfg: CfgGraph): DominanceFrontiers =
     val df = mutable.Map[String, mutable.Set[String]]()
     for node <- cfg.getAllNodes do df(node) = mutable.Set()
 
