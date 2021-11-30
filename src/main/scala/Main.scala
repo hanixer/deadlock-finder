@@ -21,7 +21,7 @@ object Main:
     Files.writeString(Path.of("out.lil"), PrettyPrint(lil))
 
     val cfg = CfgGraph(lil.funcs(0))
-    val s = PrettyPrint.cfgToDot(cfg)    
+    val s = PrettyPrint.funcToDot(lil.funcs(0), cfg)
     Files.writeString(Path.of("out.dot"), s)
 
     val btop = LilToSsa.buildBlockToParams(lil.funcs(0), cfg)

@@ -10,6 +10,7 @@ public class Example7 {
                 int tmp = x;
                 x = y;
                 y = tmp;
+                if (y == 453) break;
             }
             x = x + y;
         }

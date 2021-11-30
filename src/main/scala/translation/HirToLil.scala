@@ -22,6 +22,8 @@ class HirToLil:
   def translateFunc(func: hir.FuncDecl): FuncDecl =
     translateStmt(func.body, "end")
     addEndBlock(func)
+    val entry = Block("entry", Nil, Jump(blocks(0).label, func.loc), func.loc)
+    blocks.prepend(entry)
     FuncDecl(func.name, func.params, func.retTyp, blocks.toList, func.loc)
 
   def addEndBlock(func: hir.FuncDecl): Unit =

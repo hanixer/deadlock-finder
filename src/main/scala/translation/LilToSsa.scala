@@ -80,15 +80,21 @@ object LilToSsa:
   ): Set[String] =
     @tailrec
     def iter(todo: List[String], targets: Set[String]): Set[String] =
+      println(s"todo: ${todo.mkString(",")}; targets: ${targets.mkString(",")}")
+
       if !todo.isEmpty then
         val curr = todo.head
-        val frontier = df(curr)
-        val todo1 =
-          if !defBlocks.contains(curr) then todo.tail.appendedAll(frontier)
-          else todo.tail
-        iter(todo1, targets + curr)
+        if targets.contains(curr) then
+          iter(todo.tail, targets)
+        else
+          val frontier = df(curr)
+          val todo1 =
+            if !defBlocks.contains(curr) then todo.tail.appendedAll(frontier)
+            else todo.tail
+          iter(todo1, targets + curr)
       else targets
-
+    println("=========")
+    println(v)
     val initial = defBlocks.flatMap(b => df(b)).toSet.toList
     iter(initial, Set())
 
