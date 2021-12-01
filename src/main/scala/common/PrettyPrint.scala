@@ -4,6 +4,7 @@ package common
 import org.typelevel.paiges.Doc
 import cfg.CfgGraph
 import deadlockFinder.lil.FuncDecl
+import deadlockFinder.hir.Variable
 
 object PrettyPrint:
   def apply(node: AstNode): String =
@@ -20,3 +21,13 @@ object PrettyPrint:
   
   def separateComma(ds: List[Doc]): Doc =
     Doc.fill(Doc.text(", "), ds)
+
+  def inParens(d: Doc): Doc =
+    "(" +: d :+ ")"
+
+  def inParensAndComma(ds: List[Doc]): Doc =
+    inParens(separateComma(ds))
+
+  def argsOrEmpty(vars: List[Variable]): Doc =    
+    if vars.isEmpty then Doc.empty
+    else PrettyPrint.inParensAndComma(vars.map(_.prettyPrint))

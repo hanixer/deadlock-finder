@@ -8,6 +8,7 @@ import scala.collection.*
 import deadlockFinder.cfg.Dominators
 import deadlockFinder.cfg.DominanceFrontiers
 import scala.annotation.tailrec
+import deadlockFinder.hir.Variable
 
 object LilToSsa:
   def apply(prog: Program): Program =
@@ -25,35 +26,9 @@ object LilToSsa:
 
     // Build map: block -> params of the block
     val blockParams = buildBlockToParams(func, cfg)
+    val func1 = addBlockParams(func, blockParams)
 
     ???
-
-  def resolveVars(func: FuncDecl): Map[String, Param] =
-    val fromBody = func.body.flatMap(b =>
-      b.stmts.flatMap(s =>
-        s match
-          case v: VarDecl => Some((v.name, Param(v.name, v.t, v.loc)))
-          case _          => None
-      )
-    )
-    val params = func.params.map(p => (p.name, p))
-    fromBody.appendedAll(params).toMap
-
-  /** Return a map: variable -> blocks in which the variable is defined */
-  def buildVarToDefBlock(func: FuncDecl): Map[String, List[String]] =
-    def isTemp(name: String): Boolean = name.startsWith("t~")
-    val pairs =
-      func.body.flatMap(b =>
-        b.stmts.flatMap(s =>
-          s match
-            case v: VarDecl if !isTemp(v.name) =>
-              Some(v.name, b.label)
-            case a: Assignment if !isTemp(a.lhs) =>
-              Some(a.lhs, b.label)
-            case _ => None
-        )
-      )
-    pairs.groupMap(_._1)(_._2)
 
   /** Returns a map: block label -> params of that block */
   def buildBlockToParams(
@@ -75,6 +50,22 @@ object LilToSsa:
       )
     pairs.toMap
 
+  /** Return a map: variable -> blocks in which the variable is defined */
+  def buildVarToDefBlock(func: FuncDecl): Map[String, List[String]] =
+    def isTemp(name: String): Boolean = name.startsWith("t~")
+    val pairs =
+      func.body.flatMap(b =>
+        b.stmts.flatMap(s =>
+          s match
+            case v: VarDecl if !isTemp(v.name) =>
+              Some(v.name, b.label)
+            case a: Assignment if !isTemp(a.lhs) =>
+              Some(a.lhs, b.label)
+            case _ => None
+        )
+      )
+    pairs.groupMap(_._1)(_._2)
+
   def findPhiForVar(
       v: String,
       defBlocks: List[String],
@@ -94,5 +85,44 @@ object LilToSsa:
       else targets
     val initial = defBlocks.flatMap(b => df(b)).toSet.toList
     iter(initial, Set())
+
+  def resolveVars(func: FuncDecl): Map[String, Param] =
+    val fromBody = func.body.flatMap(b =>
+      b.stmts.flatMap(s =>
+        s match
+          case v: VarDecl => Some((v.name, Param(v.name, v.t, v.loc)))
+          case _          => None
+      )
+    )
+    val params = func.params.map(p => (p.name, p))
+    fromBody.appendedAll(params).toMap
+
+  def addBlockParams(
+      func: FuncDecl,
+      blockParams: Map[String, List[Param]]
+  ): FuncDecl =
+    def mkVars(label: String): List[Variable] =
+      blockParams(label).map(p => Variable(p.name, p.loc))
+
+    def transformTransfer(s: Transfer): Transfer = s match
+      case j: Jump => Jump(j.label, mkVars(j.label), j.loc)
+      case cj: CondJump =>
+        CondJump(
+          cj.cond,
+          cj.thenLabel,
+          mkVars(cj.thenLabel),
+          cj.elseLabel,
+          mkVars(cj.elseLabel),
+          cj.loc
+        )
+      case _ => s
+    
+    def transformBlock(b: Block): Block =
+      val transfer = transformTransfer(b.transfer)
+      val params = blockParams(b.label)
+      Block(b.label, params, b.stmts, transfer, b.loc)
+    
+    val blocks = func.body.map(transformBlock)
+    FuncDecl(func.name, func.params, func.retTyp, blocks, func.loc)
 
 end LilToSsa

@@ -19,10 +19,9 @@ case class FuncDecl(
 ) extends AstNode:
   def prettyPrint: Doc =
     val ps = params.map(_.prettyPrint)
-    val pComma = PrettyPrint.separateComma(ps)
     val b = Doc.fill(Doc.line + Doc.line, body.map(_.prettyPrint))
     ("func " +: Doc.text(name))
-      + ("(" +: pComma :+ "): ")
+      + (PrettyPrint.inParensAndComma(ps) :+ ": ")
       + Doc.str(retTyp) + Doc.line + b
 
 trait Stmt extends AstNode
@@ -40,26 +39,39 @@ case class VarDecl(name: String, t: Type, rhs: Option[Expr], loc: SourceLoc)
 
 case class Block(
     label: String,
+    params: List[Param],
     stmts: List[Stmt],
     transfer: Transfer,
     loc: SourceLoc
 ) extends Stmt:
   def prettyPrint: Doc =
     val body = stmts.map(_.prettyPrint) ++ List(transfer.prettyPrint)
-    Doc.text(label + ": ") + Doc.line +
+    val ps =
+      if params.isEmpty then Doc.empty
+      else PrettyPrint.inParensAndComma(params.map(_.prettyPrint))
+    Doc.text(label) + ps + Doc.text(": ") + Doc.line +
       Doc.fill(Doc.line, body)
+
+object Block:
+  def apply(
+      label: String,
+      stmts: List[Stmt],
+      transfer: Transfer,
+      loc: SourceLoc
+  ): Block = Block(label, Nil, stmts, transfer, loc)
 
 case class CallStmt(callExpr: CallExpr) extends Stmt:
   val loc: SourceLoc = callExpr.loc
   def prettyPrint: Doc =
-    val args = PrettyPrint.separateComma(callExpr.args.map(_.prettyPrint))
-    (callExpr.name + "(") +: (args :+ ")")
+    val args = PrettyPrint.inParensAndComma(callExpr.args.map(_.prettyPrint))    
+    callExpr.name +: args
 
 trait Transfer extends Stmt
 
 case class Jump(label: String, vars: List[Variable], loc: SourceLoc)
     extends Transfer:
-  def prettyPrint: Doc = Doc.text(s"jump $label")
+  def prettyPrint: Doc =
+    Doc.text(s"jump $label") + PrettyPrint.argsOrEmpty(vars)
 
 object Jump:
   def apply(label: String, loc: SourceLoc): Jump = Jump(label, List(), loc)
@@ -73,8 +85,10 @@ case class CondJump(
     loc: SourceLoc
 ) extends Transfer:
   def prettyPrint: Doc =
-    val c = cond.prettyPrint
-    Doc.text("condJump ") + c + Doc.text(s" $thenLabel $elseLabel")
+    val c = cond.prettyPrint        
+    Doc.text("condJump ") + c + Doc.space +
+      Doc.text(thenLabel) + PrettyPrint.argsOrEmpty(thenArgs) + Doc.space +
+      Doc.text(elseLabel) + PrettyPrint.argsOrEmpty(elseArgs)
 
 object CondJump:
   def apply(

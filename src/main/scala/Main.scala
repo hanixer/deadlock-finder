@@ -18,14 +18,13 @@ object Main:
     val node: CompilationUnit = JavaParser.parseFile(file)
     val hir = SourceToHir(node)
     val lil = HirToLil(hir)
-    Files.writeString(Path.of("out.lil"), PrettyPrint(lil))
 
     val cfg = CfgGraph(lil.funcs(0))
     val s = PrettyPrint.funcToDot(lil.funcs(0), cfg)
     Files.writeString(Path.of("out.dot"), s)
 
     val btop = LilToSsa.buildBlockToParams(lil.funcs(0), cfg)
-    for (k, v) <- btop do
-      println(s"$k: ${v.mkString(", ")}")
+    val func2 = LilToSsa.addBlockParams(lil.funcs(0), btop)
+    Files.writeString(Path.of("out.lil"), PrettyPrint(func2))
 
 end Main
