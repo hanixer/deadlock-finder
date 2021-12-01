@@ -41,13 +41,16 @@ object LilToSsa:
 
   /** Return a map: variable -> blocks in which the variable is defined */
   def buildVarToDefBlock(func: FuncDecl): Map[String, List[String]] =
+    def isTemp(name: String): Boolean = name.startsWith("t~")
     val pairs =
       func.body.flatMap(b =>
         b.stmts.flatMap(s =>
           s match
-            case v: VarDecl    => Some(v.name, b.label)
-            case a: Assignment => Some(a.lhs, b.label)
-            case _             => None
+            case v: VarDecl if !isTemp(v.name) =>
+              Some(v.name, b.label)
+            case a: Assignment if !isTemp(a.lhs) =>
+              Some(a.lhs, b.label)
+            case _ => None
         )
       )
     pairs.groupMap(_._1)(_._2)
@@ -59,7 +62,6 @@ object LilToSsa:
   ): Map[String, List[Param]] =
     val varToDefs = buildVarToDefBlock(func)
     val df = Dominators.findDominanceFrontiers(cfg)
-    println(df)
     val varToPhiBlocks = varToDefs.map((v, d) => (v, findPhiForVar(v, d, df)))
     val resolvedVars = resolveVars(func)
     val pairs =
@@ -80,12 +82,9 @@ object LilToSsa:
   ): Set[String] =
     @tailrec
     def iter(todo: List[String], targets: Set[String]): Set[String] =
-      println(s"todo: ${todo.mkString(",")}; targets: ${targets.mkString(",")}")
-
       if !todo.isEmpty then
         val curr = todo.head
-        if targets.contains(curr) then
-          iter(todo.tail, targets)
+        if targets.contains(curr) then iter(todo.tail, targets)
         else
           val frontier = df(curr)
           val todo1 =
@@ -93,8 +92,6 @@ object LilToSsa:
             else todo.tail
           iter(todo1, targets + curr)
       else targets
-    println("=========")
-    println(v)
     val initial = defBlocks.flatMap(b => df(b)).toSet.toList
     iter(initial, Set())
 
