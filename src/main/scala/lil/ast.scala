@@ -102,4 +102,6 @@ case class Return(expr: Option[SimpleExpr], loc: SourceLoc) extends Transfer:
   def prettyPrint: Doc =
     "return " +: expr.map(_.prettyPrint).getOrElse(Doc.empty)
 
-// case class SsaVariable(name: String, index: Int) extends Variable/
+case class SsaVariable(name: String, index: Int, loc: SourceLoc) extends SimpleExpr:
+  def prettyPrint: Doc =
+    Doc.text(s"$name:$index")

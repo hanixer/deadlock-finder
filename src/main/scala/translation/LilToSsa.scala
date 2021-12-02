@@ -9,6 +9,11 @@ import deadlockFinder.cfg.Dominators
 import deadlockFinder.cfg.DominanceFrontiers
 import scala.annotation.tailrec
 import deadlockFinder.hir.Variable
+import deadlockFinder.hir.Expr
+import deadlockFinder.hir.BinaryExpr
+import deadlockFinder.hir.SimpleExpr
+import deadlockFinder.hir.UnaryExpr
+import deadlockFinder.hir.CallExpr
 
 object LilToSsa:
   def apply(prog: Program): Program =
@@ -105,24 +110,65 @@ object LilToSsa:
       blockParams(label).map(p => Variable(p.name, p.loc))
 
     def transformTransfer(s: Transfer): Transfer = s match
-      case j: Jump => Jump(j.label, mkVars(j.label), j.loc)
+      case j: Jump => j.copy(vars = mkVars(j.label))
       case cj: CondJump =>
-        CondJump(
-          cj.cond,
-          cj.thenLabel,
-          mkVars(cj.thenLabel),
-          cj.elseLabel,
-          mkVars(cj.elseLabel),
-          cj.loc
-        )
+        cj.copy(thenArgs = mkVars(cj.thenLabel), elseArgs = mkVars(cj.elseLabel))
       case _ => s
     
     def transformBlock(b: Block): Block =
       val transfer = transformTransfer(b.transfer)
       val params = blockParams(b.label)
-      Block(b.label, params, b.stmts, transfer, b.loc)
+      b.copy(params = params, transfer = transfer)
     
     val blocks = func.body.map(transformBlock)
-    FuncDecl(func.name, func.params, func.retTyp, blocks, func.loc)
+    func.copy(body = blocks)
+
+  type VarEnv = List[(String, Int)]
+  case class RenameState(env: Map[String, Int], global: mutable.Map[String, Int]):
+    def lookup(name: String): Int = env.get(name).getOrElse(0)
+    def freshVar(name: String): (Int, RenameState) =
+      val index = 
+        if global.contains(name) then
+          global(name) + 1
+        else
+          0
+      global(name) = index      
+      val s = copy(env = env + (name -> index))
+      (index, s)
+
+  def renameVariables(func: FuncDecl): FuncDecl =
+    ???
+
+  def renameVariables(block: Block, state: RenameState): (Block, RenameState) =
+    def incrmentVar(name: String, env: VarEnv): Int =
+      ???
+
+    def handleStmt(stmt: Stmt, state: RenameState): (Stmt, RenameState) = stmt match
+      case vd: VarDecl =>
+        val (index, state1) = state.freshVar(vd.name)
+        
+        ???
+      
+    def handleExpr(expr: Expr, state: RenameState): Expr = expr match
+      case b: BinaryExpr => 
+        val lhs = handleSimpleExpr(b.lhs, state)
+        val rhs = handleSimpleExpr(b.rhs, state)
+        b.copy(lhs = lhs, rhs = rhs)
+      case u: UnaryExpr =>
+        val e = handleSimpleExpr(u.e, state)
+        u.copy(e = e)
+      case c: CallExpr =>
+        val args = c.args.map(a => handleSimpleExpr(a, state))
+        c.copy(args = args)
+      case s: SimpleExpr => handleSimpleExpr(s, state)
+      case _ => expr
+
+    def handleSimpleExpr(expr: SimpleExpr, state: RenameState): SimpleExpr = expr match
+      case v: Variable =>
+        val index = state.lookup(v.name)
+        SsaVariable(v.name, index, v.loc)
+      case _ => expr
+
+    ???
 
 end LilToSsa
