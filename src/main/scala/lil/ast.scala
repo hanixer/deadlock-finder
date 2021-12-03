@@ -4,6 +4,7 @@ package lil
 import common.*
 import hir.{Expr, SimpleExpr, CallExpr, Variable}
 import org.typelevel.paiges.Doc
+import deadlockFinder.hir.AbstractVar
 
 case class Program(funcs: List[FuncDecl], loc: SourceLoc = SourceLoc(1, 1))
     extends AstNode:
@@ -24,22 +25,18 @@ case class FuncDecl(
       + (PrettyPrint.inParensAndComma(ps) :+ ": ")
       + Doc.str(retTyp) + Doc.line + b
 
-trait Stmt extends AstNode
-
-case class Assignment(lhs: String, rhs: Expr, loc: SourceLoc) extends Stmt:
-  def prettyPrint: Doc = (lhs + " = ") +: rhs.prettyPrint
-
-case class VarDecl(name: String, t: Type, rhs: Option[Expr], loc: SourceLoc)
-    extends Stmt:
+case class BlockParam(v: AbstractVar, typ: Type) extends AstNode:
+  val loc: SourceLoc = v.loc
   def prettyPrint: Doc =
-    val r = rhs match
-      case Some(e) => " = " +: e.prettyPrint
-      case _       => Doc.empty
-    ("var " + name + ": ") +: (Doc.str(t) + r)
+    v.prettyPrint + Doc.text(": ") + Doc.str(typ)
+
+object BlockParam:
+  def apply(param: Param): BlockParam =
+    BlockParam(Variable(param.name, param.loc), param.typ)
 
 case class Block(
     label: String,
-    params: List[Param],
+    params: List[BlockParam],
     stmts: List[Stmt],
     transfer: Transfer,
     loc: SourceLoc
@@ -58,7 +55,20 @@ object Block:
       stmts: List[Stmt],
       transfer: Transfer,
       loc: SourceLoc
-  ): Block = Block(label, Nil, stmts, transfer, loc)
+  ): Block = Block(label, List.empty, stmts, transfer, loc)
+
+trait Stmt extends AstNode
+
+case class Assignment(lhs: AbstractVar, rhs: Expr, loc: SourceLoc) extends Stmt:
+  def prettyPrint: Doc = (lhs.prettyPrint :+ " = ") + rhs.prettyPrint
+
+case class VarDecl(v: AbstractVar, typ: Type, rhs: Option[Expr], loc: SourceLoc)
+    extends Stmt:
+  def prettyPrint: Doc =
+    val r = rhs match
+      case Some(e) => " = " +: e.prettyPrint
+      case _       => Doc.empty
+    Doc.text("var ") + v.prettyPrint + Doc.text(": ") + Doc.str(typ) + r
 
 case class CallStmt(callExpr: CallExpr) extends Stmt:
   val loc: SourceLoc = callExpr.loc
@@ -68,20 +78,20 @@ case class CallStmt(callExpr: CallExpr) extends Stmt:
 
 trait Transfer extends Stmt
 
-case class Jump(label: String, vars: List[Variable], loc: SourceLoc)
+case class Jump(label: String, vars: List[AbstractVar], loc: SourceLoc)
     extends Transfer:
   def prettyPrint: Doc =
     Doc.text(s"jump $label") + PrettyPrint.argsOrEmpty(vars)
 
 object Jump:
-  def apply(label: String, loc: SourceLoc): Jump = Jump(label, List(), loc)
+  def apply(label: String, loc: SourceLoc): Jump = Jump(label, List.empty, loc)
 
 case class CondJump(
     cond: SimpleExpr,
     thenLabel: String,
-    thenArgs: List[Variable],
+    thenArgs: List[AbstractVar],
     elseLabel: String,
-    elseArgs: List[Variable],
+    elseArgs: List[AbstractVar],
     loc: SourceLoc
 ) extends Transfer:
   def prettyPrint: Doc =
@@ -96,12 +106,12 @@ object CondJump:
       thenLabel: String,
       elseLabel: String,
       loc: SourceLoc
-  ): CondJump = CondJump(cond, thenLabel, Nil, elseLabel, Nil, loc)
+  ): CondJump = CondJump(cond, thenLabel, List.empty, elseLabel, List.empty, loc)
 
 case class Return(expr: Option[SimpleExpr], loc: SourceLoc) extends Transfer:
   def prettyPrint: Doc =
     "return " +: expr.map(_.prettyPrint).getOrElse(Doc.empty)
 
-case class SsaVariable(name: String, index: Int, loc: SourceLoc) extends SimpleExpr:
+case class SsaVariable(name: String, index: Int, loc: SourceLoc) extends AbstractVar:
   def prettyPrint: Doc =
     Doc.text(s"$name:$index")

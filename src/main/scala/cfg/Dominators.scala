@@ -4,9 +4,15 @@ package cfg
 import scala.collection.mutable
 
 type DominanceFrontiers = Map[String, Set[String]]
+type DominatorTree = Map[String, Set[String]]
+
+class Dominators(cfg: CfgGraph):
+  val immediateDoms: Map[String, String] =
+    Dominators.findImmediateDominators(cfg)
+  val df: DominanceFrontiers =
+    Dominators.findDominanceFrontiers(cfg, immediateDoms)
 
 object Dominators:
-  
 
   /** Returns map from a node to its immediate dominator. Implementation of an
     * algorithm by Keith D. Cooper.
@@ -32,9 +38,9 @@ object Dominators:
           // Find first processed predecessor.
           if doms(p) != Undefined then intersectPreds(p, rest)
           else intersectPreds(newIdom, rest)
-        else if doms(p) != Undefined then          
+        else if doms(p) != Undefined then
           intersectPreds(intersect(newIdom, p), rest)
-        else 
+        else
           // Predecessor is not processed, skip it.
           intersectPreds(newIdom, rest)
       case _ => newIdom
@@ -58,11 +64,17 @@ object Dominators:
 
     doms.zipWithIndex.map((idom, node) => (rposta(node), rposta(idom))).toMap
 
-  /**
-   * Find dominance frontier for each node in CFG.
-   * Return a map from a node to its dominance frontier.
-   */
+  /** Find dominance frontier for each node in CFG. Return a map from a node to
+    * its dominance frontier.
+    */
   def findDominanceFrontiers(cfg: CfgGraph): DominanceFrontiers =
+    val doms = findImmediateDominators(cfg)
+    findDominanceFrontiers(cfg, doms)
+
+  def findDominanceFrontiers(
+      cfg: CfgGraph,
+      doms: Map[String, String]
+  ): DominanceFrontiers =
     val df = mutable.Map[String, mutable.Set[String]]()
     for node <- cfg.getAllNodes do df(node) = mutable.Set()
 
@@ -75,8 +87,7 @@ object Dominators:
         walkUpDoms(join, idom, doms(curr))
 
     for join <- joins do
-      for pred <- cfg.getPreds(join) do 
-        walkUpDoms(join, doms(join), pred)
+      for pred <- cfg.getPreds(join) do walkUpDoms(join, doms(join), pred)
 
     df.map((k, v) => (k, v.toSet)).toMap
 

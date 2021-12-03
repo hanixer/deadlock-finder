@@ -5,6 +5,7 @@ import org.typelevel.paiges.Doc
 import cfg.CfgGraph
 import deadlockFinder.lil.FuncDecl
 import deadlockFinder.hir.Variable
+import deadlockFinder.hir.AbstractVar
 
 object PrettyPrint:
   def apply(node: AstNode): String =
@@ -28,6 +29,6 @@ object PrettyPrint:
   def inParensAndComma(ds: List[Doc]): Doc =
     inParens(separateComma(ds))
 
-  def argsOrEmpty(vars: List[Variable]): Doc =    
+  def argsOrEmpty(vars: List[AbstractVar]): Doc =    
     if vars.isEmpty then Doc.empty
     else PrettyPrint.inParensAndComma(vars.map(_.prettyPrint))

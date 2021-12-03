@@ -1,28 +1,26 @@
 package deadlockFinder
 package translation
 
+import common.VoidType
+import hir.IfThenElse
 import lil.*
 
-import scala.collection.mutable.ListBuffer
-import deadlockFinder.hir.IfThenElse
-
-import scala.collection.mutable.Stack
-import deadlockFinder.common.VoidType
-
 import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.collection.mutable.{ListBuffer, Stack}
 
 class HirToLil:
   val blockStmts: ListBuffer[Stmt] = ListBuffer()
   val blocks: ListBuffer[Block] = ListBuffer()
   var labelCount: Int = 0
   var currLabel: String = mkLabel()
-  var loopStack: Stack[(String, String)] =
-    Stack() // Stack of (loopStart, loopEnd) pairs
+  var loopStack: mutable.Stack[(String, String)] =
+    mutable.Stack() // Stack of (loopStart, loopEnd) pairs
 
   def translateFunc(func: hir.FuncDecl): FuncDecl =
     translateStmt(func.body, "end")
     addEndBlock(func)
-    val entry = Block("entry", Nil, Jump(blocks(0).label, func.loc), func.loc)
+    val entry = Block("entry", List.empty, Jump(blocks.head.label, func.loc), func.loc)
     blocks.prepend(entry)
     FuncDecl(func.name, func.params, func.retTyp, blocks.toList, func.loc)
 
@@ -63,10 +61,10 @@ class HirToLil:
       loopStack.pop()
 
     case v: hir.VarDecl =>
-      addStmt(VarDecl(v.name, v.t, v.rhs, v.loc))
+      addStmt(VarDecl(hir.Variable(v.name, v.loc), v.t, v.rhs, v.loc))
 
     case a: hir.Assignment =>
-      addStmt(Assignment(a.lhs, a.rhs, a.loc))
+      addStmt(Assignment(hir.Variable(a.lhs, a.loc), a.rhs, a.loc))
 
     case b: hir.Break =>
       if loopStack.isEmpty then
@@ -116,13 +114,13 @@ class HirToLil:
   //   case u: UnsupportedConstruct => UnsupportedConstruct(u.loc)
 
   def isControlStmt(stmt: hir.Stmt): Boolean = stmt match
-    case i: hir.IfThenElse => true
-    case l: hir.Loop       => true
+    case _: hir.IfThenElse => true
+    case _: hir.Loop       => true
     case _                 => false
 
   def isBreakOrContinue(stmt: hir.Stmt): Boolean = stmt match
-    case i: hir.Break    => true
-    case l: hir.Continue => true
+    case _: hir.Break    => true
+    case _: hir.Continue => true
     case _               => false
 
   def addStmt(stmt: Stmt): Unit =

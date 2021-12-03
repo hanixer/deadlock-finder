@@ -1,16 +1,13 @@
 package deadlockFinder
 
-import hir.{Expr, IntLiteral, Variable}
-import translation.{HirToLil, SourceToHir}
-
+import cfg.{CfgGraph, Dominators}
 import common.PrettyPrint
+import hir.{Expr, IntLiteral, Variable}
+import translation.{HirToLil, LilToSsa, SourceToHir}
+
 import org.eclipse.jdt.core.dom.*
 
-import java.nio.file.Path
-import deadlockFinder.cfg.CfgGraph
-import deadlockFinder.cfg.Dominators
-import java.nio.file.Files
-import deadlockFinder.translation.LilToSsa
+import java.nio.file.{Files, Path}
 
 object Main:
   def main(args: Array[String]): Unit =
@@ -19,12 +16,13 @@ object Main:
     val hir = SourceToHir(node)
     val lil = HirToLil(hir)
 
-    val cfg = CfgGraph(lil.funcs(0))
-    val s = PrettyPrint.funcToDot(lil.funcs(0), cfg)
+    val func = lil.funcs.head
+    val cfg = CfgGraph(func)
+    val s = PrettyPrint.funcToDot(func, cfg)
     Files.writeString(Path.of("out.dot"), s)
 
-    val btop = LilToSsa.buildBlockToParams(lil.funcs(0), cfg)
-    val func2 = LilToSsa.addBlockParams(lil.funcs(0), btop)
+    val btop = LilToSsa.buildBlockToParams(func, cfg)
+    val func2 = LilToSsa.addBlockParams(func, btop)
     Files.writeString(Path.of("out.lil"), PrettyPrint(func2))
 
 end Main

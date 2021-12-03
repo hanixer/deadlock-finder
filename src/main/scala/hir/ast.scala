@@ -79,10 +79,13 @@ trait Expr extends AstNode
 
 trait SimpleExpr extends Expr
 
+abstract class AbstractVar extends SimpleExpr:
+  def name: String
+
 case class IntLiteral(n: Int, loc: SourceLoc) extends SimpleExpr:
   def prettyPrint: Doc = Doc.str(n)
 
-case class Variable(name: String, loc: SourceLoc) extends SimpleExpr:
+case class Variable(name: String, loc: SourceLoc) extends AbstractVar:
   def prettyPrint: Doc = Doc.text(name)
 
 case class BinaryExpr(
