@@ -2,6 +2,7 @@ package deadlockFinder
 package cfg
 
 import scala.collection.mutable
+import javax.lang.model.element.ModuleElement.DirectiveKind
 
 type DominanceFrontiers = Map[String, Set[String]]
 type DominatorTree = Map[String, Set[String]]
@@ -11,8 +12,19 @@ class Dominators(cfg: CfgGraph):
     Dominators.findImmediateDominators(cfg)
   val df: DominanceFrontiers =
     Dominators.findDominanceFrontiers(cfg, immediateDoms)
+  val dtree: DominatorTree =
+    Dominators.computeDominatorTree(immediateDoms)
+  
+  def getDominanceFrontier(node: String): Set[String] =
+    df(node)
+  
+  def getDomTreeChildren(node: String): Set[String] =
+    dtree.get(node).getOrElse(Set.empty)
 
 object Dominators:
+
+  def apply(cfg: CfgGraph): Dominators =
+    new Dominators(cfg)
 
   /** Returns map from a node to its immediate dominator. Implementation of an
     * algorithm by Keith D. Cooper.
@@ -100,3 +112,8 @@ object Dominators:
         list.addOne(curr)
     dfs(cfg.entry)
     list.toList.reverse
+
+  def computeDominatorTree(doms: Map[String, String]): DominatorTree =
+    doms.toSeq.map((k, v) => (v, k))
+      .groupMap(_._1)(_._2)
+      .map((k, v) => (k, v.toSet))

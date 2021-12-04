@@ -15,14 +15,8 @@ object Main:
     val node: CompilationUnit = JavaParser.parseFile(file)
     val hir = SourceToHir(node)
     val lil = HirToLil(hir)
+    val ssa = LilToSsa(lil)
 
-    val func = lil.funcs.head
-    val cfg = CfgGraph(func)
-    val s = PrettyPrint.funcToDot(func, cfg)
-    Files.writeString(Path.of("out.dot"), s)
-
-    val btop = LilToSsa.buildBlockToParams(func, cfg)
-    val func2 = LilToSsa.addBlockParams(func, btop)
-    Files.writeString(Path.of("out.lil"), PrettyPrint(func2))
+    Files.writeString(Path.of("out.ssa"), PrettyPrint(ssa))
 
 end Main

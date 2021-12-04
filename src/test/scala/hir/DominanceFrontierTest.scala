@@ -23,12 +23,12 @@ class DominanceFrontierTest extends AnyFunSuite:
     )
     val entry = "r"
     val cfg = CfgGraph(nodes, edges, entry)
-    val fronts = Dominators.findDominanceFrontiers(cfg)
+    val doms = Dominators(cfg)
 
-    assert(fronts("B") === Set("D"))
-    assert(fronts("C") === Set("D", "E"))
-    assert(fronts("D") === Set("E", "A"))
-    assert(fronts("E") === Set())
-    assert(fronts("A") === Set("A"))
+    assert(doms.getDominanceFrontier("B") === Set("D"))
+    assert(doms.getDominanceFrontier("C") === Set("D", "E"))
+    assert(doms.getDominanceFrontier("D") === Set("E", "A"))
+    assert(doms.getDominanceFrontier("E") === Set())
+    assert(doms.getDominanceFrontier("A") === Set("A"))
   }
     

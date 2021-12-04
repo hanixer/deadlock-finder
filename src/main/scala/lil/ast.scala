@@ -18,6 +18,8 @@ case class FuncDecl(
     body: List[Block],
     loc: SourceLoc
 ) extends AstNode:
+  lazy val labelToBlock: Map[String, Block] =
+    body.map(b => (b.label, b)).toMap
   def prettyPrint: Doc =
     val ps = params.map(_.prettyPrint)
     val b = Doc.fill(Doc.line + Doc.line, body.map(_.prettyPrint))
