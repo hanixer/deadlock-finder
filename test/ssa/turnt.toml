@@ -1,0 +1,2 @@
+command = "cd ../.. & bloop run deadlock-finder -m deadlockFinder.TranslateSsa -- test/ssa/{filename}"
+diff = "git --no-pager diff --no-index"

@@ -65,6 +65,7 @@ object LilToSsa:
       )
     pairs.groupMap(_._1)(_._2)
 
+  /** Find all blocks in which the specified must be added as a phi parameter. */
   def findPhiForVar(
       v: String,
       defBlocks: List[String],
@@ -85,6 +86,7 @@ object LilToSsa:
     val initial = defBlocks.flatMap(b => doms.getDominanceFrontier(b)).distinct
     iter(initial, Set())
 
+  /** Make a map from a variable name to its declaration info (type, etc.) */
   def resolveVars(func: FuncDecl): Map[String, BlockParam] =
     val fromBody = func.body.flatMap { b =>
       b.stmts.flatMap(s =>
@@ -96,6 +98,9 @@ object LilToSsa:
     val params = func.params.map(p => (p.name, BlockParam(p)))
     fromBody.appendedAll(params).toMap
 
+  /** Transform a function by adding arguments to jumps and 
+   *  adding parameters to blocks
+   */
   def addBlockParams(
       func: FuncDecl,
       blockParams: Map[String, List[BlockParam]]
@@ -120,11 +125,12 @@ object LilToSsa:
     val blocks = func.body.map(transformBlock)
     func.copy(body = blocks)
 
+  /** State for renaming - a mutable environment, and a mutable global map */
   case class RenameState(
       env: Map[String, Int],
       global: mutable.Map[String, Int]
   ):
-    def lookup(name: String): Int = env.getOrElse(name, 0)
+    def lookup(name: String): Option[Int] = env.get(name)
     def freshVar(v: AbstractVar): (SsaVariable, RenameState) =
       val name = v.name
       val index =
@@ -135,6 +141,7 @@ object LilToSsa:
       val s = copy(env = env + (name -> index))
       (ssaVar, s)
 
+  /** Rename variables in a function declaration */
   def renameVariables(func: FuncDecl, doms: Dominators): FuncDecl =
     def renameAndCollect(
         block: Block,
@@ -156,6 +163,9 @@ object LilToSsa:
     val blocks = renameAndCollect(func.body.head, initState, List.empty)
     func.copy(body = blocks)
 
+  /** Rename variables in a block.
+   *  Returns a transformed block and rename state
+   */
   def renameVariables(
       block: Block,
       state: RenameState,
@@ -164,8 +174,9 @@ object LilToSsa:
     def handleVariable(v: AbstractVar, state: RenameState): AbstractVar =
       v match
         case v: Variable =>
-          val index = state.lookup(v.name)
-          SsaVariable(v.name, index, v.loc)
+          state.lookup(v.name) match 
+            case Some(index) => SsaVariable(v.name, index, v.loc)
+            case _ => v
         case _ => v
 
     def handleSimpleExpr(expr: SimpleExpr, state: RenameState): SimpleExpr =

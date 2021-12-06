@@ -1,0 +1,41 @@
+func showcase.Example7.func1(x: int, y: int): void
+entry: 
+jump bb1(tmp, x, y)
+
+bb1(tmp.0: int, x.0: int, y.0: int): 
+var t~1.0: boolean = x.0<y.0
+var t~2.0: boolean = !t~1.0
+condJump t~2 bb4 bb3
+
+bb4: 
+jump bb2(tmp.0, x.0, y.0)
+
+bb2(tmp.3: int, x.5: int, y.4: int): 
+y.5 = x.5
+jump end
+
+end: 
+return 
+
+bb3: 
+var t~3.0: boolean = x.0==555
+condJump t~3 bb6 bb7
+
+bb7: 
+var tmp.2: int = x.0
+x.4 = y.0
+y.3 = tmp.2
+var t~4.0: boolean = y.3==453
+condJump t~4 bb8 bb5(tmp.2, x.4, y.3)
+
+bb8: 
+jump bb2(tmp.2, x.4, y.3)
+
+bb6: 
+y.2 = 0
+x.3 = 0
+jump bb5(tmp.0, x.3, y.2)
+
+bb5(tmp.1: int, x.1: int, y.1: int): 
+x.2 = x.1+y.1
+jump bb1(tmp.1, x.2, y.1)

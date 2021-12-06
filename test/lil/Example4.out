@@ -1,4 +1,7 @@
 func showcase.Example4.func1(): void
+entry: 
+jump bb1
+
 bb1: 
 var x: int = 6
 var y: int = 3
