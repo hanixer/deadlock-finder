@@ -62,7 +62,8 @@ object Block:
 trait Stmt extends AstNode
 
 case class Assignment(lhs: AbstractVar, rhs: Expr, loc: SourceLoc) extends Stmt:
-  def prettyPrint: Doc = (lhs.prettyPrint :+ " = ") + rhs.prettyPrint
+  def prettyPrint: Doc = 
+    (lhs.prettyPrint :+ " = ") + rhs.prettyPrint
 
 case class VarDecl(v: AbstractVar, typ: Type, rhs: Option[Expr], loc: SourceLoc)
     extends Stmt:
@@ -116,4 +117,4 @@ case class Return(expr: Option[SimpleExpr], loc: SourceLoc) extends Transfer:
 
 case class SsaVariable(name: String, index: Int, loc: SourceLoc) extends AbstractVar:
   def prettyPrint: Doc =
-    Doc.text(s"$name:$index")
+    Doc.text(s"$name.$index")

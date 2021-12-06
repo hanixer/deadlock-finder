@@ -125,13 +125,15 @@ object LilToSsa:
       global: mutable.Map[String, Int]
   ):
     def lookup(name: String): Int = env.getOrElse(name, 0)
-    def freshVar(name: String): (Int, RenameState) =
+    def freshVar(v: AbstractVar): (SsaVariable, RenameState) =
+      val name = v.name
       val index =
         if global.contains(name) then global(name) + 1
         else 0
       global(name) = index
+      val ssaVar = SsaVariable(v.name, index, v.loc)
       val s = copy(env = env + (name -> index))
-      (index, s)
+      (ssaVar, s)
 
   def renameVariables(func: FuncDecl, doms: Dominators): FuncDecl =
     def renameAndCollect(
@@ -200,14 +202,12 @@ object LilToSsa:
     def handleStmt(stmt: Stmt, state: RenameState): (Stmt, RenameState) =
       stmt match
         case vd: VarDecl =>
-          val (index, state1) = state.freshVar(vd.v.name)
-          val v = SsaVariable(vd.v.name, index, vd.loc)
-          val rhs = vd.rhs.map(e => handleExpr(e, state1))
+          val (v, state1) = state.freshVar(vd.v)
+          val rhs = vd.rhs.map(e => handleExpr(e, state))
           (vd.copy(v = v, rhs = rhs), state1)
         case a: Assignment =>
-          val (index, state1) = state.freshVar(a.lhs.name)
-          val lhs = SsaVariable(a.lhs.name, index, a.loc)
-          val rhs = handleExpr(a.rhs, state1)
+          val (lhs, state1) = state.freshVar(a.lhs)
+          val rhs = handleExpr(a.rhs, state)
           (a.copy(lhs = lhs, rhs = rhs), state1)
         case c: CallStmt =>
           val args = c.callExpr.args.map(e => handleSimpleExpr(e, state))
@@ -215,18 +215,24 @@ object LilToSsa:
         case t: Transfer =>
           (handleTransfer(t, state), state)
 
-    @tailrec
-    def renameAndCollect(
-        stmts: List[Stmt],
-        acc: List[Stmt],
-        state: RenameState
-    ): (List[Stmt], RenameState) = stmts match
-      case s :: rest =>
-        val (s1, state1) = handleStmt(s, state)
-        renameAndCollect(rest, s1 :: acc, state1)
-      case _ => (stmts.reverse, state)
-    val (stmts, state1) = renameAndCollect(block.stmts, List.empty, state)
-    val transfer = handleTransfer(block.transfer, state1)
-    (block.copy(stmts = stmts, transfer = transfer), state1)
+    // Process block params.
+    val (params, state1) =
+      block.params.foldRight((List.empty[BlockParam], state))((p, acc) =>
+        val (ps, state) = acc
+        val (v, state1) = state.freshVar(p.v)
+        (p.copy(v = v) :: ps, state1)
+      )
+    // Process statements.
+    val (stmts, state2) =
+      block.stmts.foldLeft((List.empty[Stmt], state1))((acc, stmt) =>
+        val (stmts, state) = acc
+        val (stmt1, state1) = handleStmt(stmt, state)
+        (stmt1 :: stmts, state1)
+      )
+    // Process transfer statement.
+    val transfer = handleTransfer(block.transfer, state2)
+    val block1 =
+      block.copy(stmts = stmts.reverse, transfer = transfer, params = params)
+    (block1, state2)
 
 end LilToSsa

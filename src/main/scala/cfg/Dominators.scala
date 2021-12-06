@@ -74,7 +74,9 @@ object Dominators:
           doms(node) = newIdom
           changed = true
 
-    doms.zipWithIndex.map((idom, node) => (rposta(node), rposta(idom))).toMap
+    doms.zipWithIndex.map((idom, node) => (rposta(node), rposta(idom)))
+      .filter((n, _) => n != cfg.entry) // Entry node - no immediate dominator.
+      .toMap
 
   /** Find dominance frontier for each node in CFG. Return a map from a node to
     * its dominance frontier.
