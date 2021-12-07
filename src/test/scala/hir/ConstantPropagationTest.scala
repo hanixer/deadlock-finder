@@ -2,12 +2,12 @@ package deadlockFinder
 package hir
 
 import org.scalatest.funsuite.AnyFunSuite
-import deadlockFinder.translation.{HirToLil, LilToSsa, SourceToHir}
+import translation.{HirToLil, LilToSsa, SourceToHir}
 import deadlockFinder.JavaParser
-import deadlockFinder.analysis.ConstantPropagation
-import deadlockFinder.analysis.ConstantPropagation.{ConstantAbsVal, VarInfo}
-import deadlockFinder.cfg.CfgGraph
-import deadlockFinder.common.PrettyPrint
+import analysis.ConstantPropagation
+import analysis.ConstantPropagation.{ConstantAbsVal, VarInfo}
+import cfg.CfgGraph
+import common.PrettyPrint
 
 class ConstantPropagationTest extends AnyFunSuite:
   test("example 1") {
