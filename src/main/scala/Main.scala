@@ -8,6 +8,7 @@ import translation.{HirToLil, LilToSsa, SourceToHir}
 import org.eclipse.jdt.core.dom.*
 
 import java.nio.file.{Files, Path}
+import deadlockFinder.analysis.ConstantPropagation
 
 object Main:
   def main(args: Array[String]): Unit =
@@ -16,6 +17,11 @@ object Main:
     val hir = SourceToHir(node)
     val lil = HirToLil(hir)
     val ssa = LilToSsa(lil)
+
+    val func = ssa.funcs.head
+    val useDefMap = ConstantPropagation.buildUseDefMap(func)
+    for (u, d) <- useDefMap do
+      println(s"$u -> $d")
 
     Files.writeString(Path.of("out.ssa"), PrettyPrint(ssa))
 
