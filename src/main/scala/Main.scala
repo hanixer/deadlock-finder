@@ -12,7 +12,7 @@ import deadlockFinder.analysis.ConstantPropagation
 
 object Main:
   def main(args: Array[String]): Unit =
-    val file = "examples/showcase/Example8.java"
+    val file = "examples/showcase/Example7.java"
     val node: CompilationUnit = JavaParser.parseFile(file)
     val hir = SourceToHir(node)
     val lil = HirToLil(hir)

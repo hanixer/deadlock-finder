@@ -183,7 +183,7 @@ object ConstantPropagation:
         val (d, newV) = getDefAndNewValue(use, consts)
         val oldV = consts.lookup(d.varInfo)
         // Check if new value is lower than the old one.
-        if newV.isLower(oldV) then
+        if newV != oldV && newV.isLower(oldV) then
           // Add new items to worklist, update constants map.
           val consts1 = consts.updated(d.varInfo, newV)
           val uses = usesAndDefs.getUses(d)
