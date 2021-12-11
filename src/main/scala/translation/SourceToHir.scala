@@ -21,10 +21,11 @@ import javax.swing.tree.TreePath
   */
 object SourceToHir:
   def apply(cu: CompilationUnit): Program =
-    cu.accept(Visitor)
-    Program(Visitor.getFuncs)
+    val visitor = new Visitor
+    cu.accept(visitor)
+    Program(visitor.getFuncs)
 
-private object Visitor extends ASTVisitor:
+class Visitor extends ASTVisitor:
   val TranslateProperty = "Translate"
   var compilationUnit: CompilationUnit = null
   private val funcs = ListBuffer[FuncDecl]()
