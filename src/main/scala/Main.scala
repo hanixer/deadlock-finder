@@ -19,7 +19,7 @@ object Main:
     val ssa = LilToSsa(lil)
 
     val func = ssa.funcs.head
-    val useDefMap = ConstantPropagation.buildUseDefMap(func)
+    val useDefMap = ConstantPropagation.buildDefUseMap(func)
     for (u, d) <- useDefMap do
       println(s"$u -> $d")
 

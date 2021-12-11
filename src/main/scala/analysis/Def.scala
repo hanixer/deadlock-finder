@@ -19,3 +19,6 @@ object Def:
     override def toString: String = s"Def.FParam($varInfo, $index)"
   case class Undefined(varInfo: VarInfo) extends Def:
     override def toString: String = s"Def.Undefined($varInfo)"
+
+  def apply(vd: VarDecl): VDecl = VDecl(VarInfo(vd.v), vd)
+  def apply(a: Assignment): Assign = Assign(VarInfo(a.lhs), a)

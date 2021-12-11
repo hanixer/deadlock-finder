@@ -13,25 +13,32 @@ object Iner:
   case class KKkere(s: String) extends Iner
 
 object Main2:
-  def time[R](block: => R): R = {
+  def time[R](block: => R): R =
     val t0 = System.nanoTime()
     val result = block    // call-by-name
     val t1 = System.nanoTime()
     println("Elapsed time: " + (t1 - t0) + "ns")
     result
-  }
 
   def main(args: Array[String]): Unit =
+    val pairs = generatePairs(10, 10000)
     for i <- 0 to 4 do
-      val l = time {recurByList(1, 3)}
-      val s = time {recurBySet(1, 3)}
-      val jjj = l.toSet.toList
-      println(s"list size: ${l.length}, set size: ${s.size}")
+      val s1 = time {
+        pairs.groupMap(_._1)(_._2).map((k, v) => (k, v.toSet))
+      }
+      val s2 = time {
+        pairs.groupMapReduce(_._1)((_, v) => Set(v))((s, u) => s.union(u))
+      }
+      println(s1.size)
+      println(s2.size)
+      println("==============================")
 
-  def recurByList(curr: Int, depth: Int): List[Int] =
-    if depth == 0 then List(curr)
-    else curr :: recurByList(curr * 2, depth - 1) ++ recurByList(curr * 20 + 1, depth - 1)
-
-  def recurBySet(curr: Int, depth: Int): Set[Int] =
-    if depth == 0 then Set(curr)
-    else recurBySet(curr * 2, depth - 1).union(recurBySet(curr * 20 + 1, depth - 1)).incl(curr)
+  val r = scala.util.Random
+  
+  def generatePairs(n: Int, m: Int): Seq[(Int, Int)] =
+    val kkk = for { 
+        i <- 0 to n 
+        j <- 0 to m        
+    } yield (i, r.nextInt)
+    kkk
+      
