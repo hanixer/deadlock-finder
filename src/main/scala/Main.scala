@@ -12,17 +12,18 @@ import deadlockFinder.analysis.ConstantPropagation
 
 object Main:
   def main(args: Array[String]): Unit =
-    val file = "examples/showcase/Example7.java"
+    val file = "examples/showcase/Example8.java"
     val node: CompilationUnit = JavaParser.parseFile(file)
     val hir = SourceToHir(node)
     val lil = HirToLil(hir)
     val ssa = LilToSsa(lil)
 
-    val func = ssa.funcs.head
-    val useDefMap = ConstantPropagation.buildDefUseMap(func)
-    for (u, d) <- useDefMap do
-      println(s"$u -> $d")
-
     Files.writeString(Path.of("out.ssa"), PrettyPrint(ssa))
+    
+    val func = ssa.funcs.head
+    val consts = ConstantPropagation.computeConstants(func)
+    for (varInfo, const) <- consts do
+      println(s"$varInfo -> $const")
+
 
 end Main

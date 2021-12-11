@@ -30,12 +30,16 @@ object ConstantPropagation:
           case ConstantAbsVal.Undefined => true
           case _                        => false
       case ConstantAbsVal.Undefined => false
+    def isConstant: Boolean = const match
+      case ConstantAbsVal.Constant(_) => true
+      case _                          => false
 
   type ConstantsMap = Map[VarInfo, ConstantAbsVal]
 
   extension (consts: ConstantsMap)
-    def lookup(v: AbstractVar): ConstantAbsVal = consts(VarInfo(v))
-    def lookup(v: VarInfo): ConstantAbsVal = consts(v)
+    def lookup(v: AbstractVar): ConstantAbsVal = lookup(VarInfo(v))
+    def lookup(v: VarInfo): ConstantAbsVal = 
+      consts.get(v).getOrElse(ConstantAbsVal.Undefined)
 
   def evalBinopInt(op: BinaryOp, n1: Int, n2: Int): ConstantAbsVal = op match
     case BinaryOp.Plus   => ConstantAbsVal.Constant(n1 + n2)
@@ -44,22 +48,28 @@ object ConstantPropagation:
     case BinaryOp.Divide => ConstantAbsVal.Constant(n1 / n2)
     case _               => ConstantAbsVal.NotConstant
 
-  def evalBinopConst(op: BinaryOp, lhs: ConstantAbsVal, rhs: ConstantAbsVal): ConstantAbsVal = 
+  def evalBinopConst(
+      op: BinaryOp,
+      lhs: ConstantAbsVal,
+      rhs: ConstantAbsVal
+  ): ConstantAbsVal =
     lhs match
       case ConstantAbsVal.NotConstant => ConstantAbsVal.NotConstant
-      case ConstantAbsVal.Constant(n1) => rhs match
-        case ConstantAbsVal.NotConstant => ConstantAbsVal.NotConstant
-        case ConstantAbsVal.Constant(n2) => evalBinopInt(op, n1, n2)
-        case ConstantAbsVal.Undefined => ConstantAbsVal.Undefined
+      case ConstantAbsVal.Constant(n1) =>
+        rhs match
+          case ConstantAbsVal.NotConstant  => ConstantAbsVal.NotConstant
+          case ConstantAbsVal.Constant(n2) => evalBinopInt(op, n1, n2)
+          case ConstantAbsVal.Undefined    => ConstantAbsVal.Undefined
       case ConstantAbsVal.Undefined => ConstantAbsVal.Undefined
 
-  def mergeValues(v1: ConstantAbsVal, v2: ConstantAbsVal): ConstantAbsVal = 
+  def mergeValues(v1: ConstantAbsVal, v2: ConstantAbsVal): ConstantAbsVal =
     v1 match
       case ConstantAbsVal.NotConstant => ConstantAbsVal.NotConstant
-      case ConstantAbsVal.Constant(n1) => v2 match
-        case ConstantAbsVal.Undefined => v1
-        case ConstantAbsVal.Constant(n2) if n1 == n2 => v1
-        case _ => ConstantAbsVal.NotConstant
+      case ConstantAbsVal.Constant(n1) =>
+        v2 match
+          case ConstantAbsVal.Undefined                => v1
+          case ConstantAbsVal.Constant(n2) if n1 == n2 => v1
+          case _ => ConstantAbsVal.NotConstant
       case ConstantAbsVal.Undefined => v2
 
   /** Collect immediate constants and add to map. Other variables marked
@@ -96,140 +106,88 @@ object ConstantPropagation:
 
     func.body.flatMap(visitBlock).toMap
 
-  /** Collect map from use to def */
-  def buildDefUseMap(func: FuncDecl): Map[Def, Set[Use]] =
-    def getUsesInExpr(expr: Expr): List[VarInfo] = expr match
-      case b: BinaryExpr  => getUsesInExpr(b.lhs) ++ getUsesInExpr(b.rhs)
-      case u: UnaryExpr   => getUsesInExpr(u.e)
-      case c: CallExpr    => c.args.flatMap(getUsesInExpr)
-      case v: AbstractVar => List(VarInfo(v))
-      case _              => List.empty
-
-    def getUsesInStmt(stmt: Stmt): List[Use] = stmt match
-      case vd: VarDecl =>
-        val varInfos = vd.rhs.map(getUsesInExpr).getOrElse(List.empty)
-        varInfos.map(vi => Use.VDecl(vi, vd))
-      case a: Assignment =>
-        val varInfos = getUsesInExpr(a.rhs)
-        varInfos.map(vi => Use.Assign(vi, a))
-      case _ => List.empty
-
-    def blockArgsToUses(args: List[AbstractVar], label: String): List[Use] =
-      args
-        .map(VarInfo.apply)
-        .zipWithIndex
-        .map((vi, i) => Use.BParam(vi, label, i))
-
-    def getUsesInTransfer(transfer: Transfer): List[Use] = transfer match
-      case j: Jump => blockArgsToUses(j.vars, j.label)
-      case cj: CondJump =>
-        blockArgsToUses(cj.thenArgs, cj.thenLabel) ++ blockArgsToUses(
-          cj.elseArgs,
-          cj.elseLabel
-        )
-      case _ => List.empty
-
-    def getDefInStmt(stmt: Stmt): Option[Def] = stmt match
-      case vd: VarDecl   => Some(Def(vd))
-      case a: Assignment => Some(Def(a))
-      case _             => None
-
-    def blockParamsToDefs(params: List[BlockParam], label: String): List[Def] =
-      params.zipWithIndex.map((p, i) => Def.BParam(VarInfo(p.v), label, i))
-
-    def funcParamsToDefs(params: List[Param]): List[Def] =
-      params.zipWithIndex.map((p, i) => Def.FParam(VarInfo(p.name), i))
-
-    def getUsesInBlock(block: Block): List[Use] =
-      block.stmts.flatMap(getUsesInStmt) ++ getUsesInTransfer(block.transfer)
-
-    def getDefsInBlock(block: Block): List[Def] =
-      blockParamsToDefs(block.params, block.label) ++ block.stmts.flatMap(
-        getDefInStmt
-      )
-
-    def mkMap(uses: List[Use], defs: List[Def]): Map[Def, Set[Use]] =
-      defs.map(d => (d, uses.filter(u => u.varInfo == d.varInfo).toSet)).toMap
-
-    val defsP = funcParamsToDefs(func.params)
-    val defsB = func.body.flatMap(getDefsInBlock)
-    val uses = func.body.flatMap(getUsesInBlock)
-
-    mkMap(uses, defsP ++ defsB)
-
-  end buildDefUseMap
-
-  case class BlockArg(label: String, pos: Int)  
+  case class BlockArg(label: String, pos: Int)
 
   /** Build a map that answers a question: Which variables are passed to a block
-   *  to a give position?
-   */
+    * to a give position?
+    */
   def buildBlockArgsMap(func: FuncDecl): Map[BlockArg, Set[VarInfo]] =
-    def visitArgs(args: List[AbstractVar], label: String): List[(BlockArg, VarInfo)] =
+    def visitArgs(
+        args: List[AbstractVar],
+        label: String
+    ): List[(BlockArg, VarInfo)] =
       args.zipWithIndex.map((v, pos) => (BlockArg(label, pos), VarInfo(v)))
 
-    def visitBlock(block: Block): List[(BlockArg, VarInfo)] = block.transfer match
-      case j: Jump => visitArgs(j.vars, block.label)
-      case cj: CondJump =>
-        visitArgs(cj.thenArgs, cj.thenLabel) ++ visitArgs(cj.elseArgs, cj.elseLabel)
-      case _ => List.empty
+    def visitBlock(block: Block): List[(BlockArg, VarInfo)] =
+      block.transfer match
+        case j: Jump => visitArgs(j.vars, j.label)
+        case cj: CondJump =>
+          visitArgs(cj.thenArgs, cj.thenLabel) ++ visitArgs(
+            cj.elseArgs,
+            cj.elseLabel
+          )
+        case _ => List.empty
 
     val pairs = func.body.flatMap(visitBlock)
     pairs.groupMap(_._1)(_._2).map((k, v) => (k, v.toSet))
 
-
   def computeConstants(func: FuncDecl): ConstantsMap =
     def evalExpr(expr: Expr, consts: ConstantsMap): ConstantAbsVal = expr match
-      case b: BinaryExpr  => 
+      case b: BinaryExpr =>
         val lhs = evalExpr(b.lhs, consts)
         val rhs = evalExpr(b.rhs, consts)
         evalBinopConst(b.op, lhs, rhs)
-      case u: UnaryExpr   => ???
-      case c: CallExpr    => ???
-      case v: AbstractVar => 
-        consts.lookup(v)
-      case i: IntLiteral => ConstantAbsVal.Constant(i.n)
-      case _ => ConstantAbsVal.NotConstant
+      case v: AbstractVar => consts.lookup(v)
+      case i: IntLiteral  => ConstantAbsVal.Constant(i.n)
+      case _              => ConstantAbsVal.NotConstant
 
-    def mergeVars(varInfos: Set[VarInfo], consts: ConstantsMap): ConstantAbsVal =
-      varInfos.foldLeft(ConstantAbsVal.Undefined)((val1, varInfo2) => 
+    def mergeVars(
+        varInfos: Set[VarInfo],
+        consts: ConstantsMap
+    ): ConstantAbsVal =
+      varInfos.foldLeft(ConstantAbsVal.Undefined)((val1, varInfo2) =>
         val val2 = consts.lookup(varInfo2)
-        mergeValues(val1, val2))
-    
-    val defUseMap = buildDefUseMap(func)
+        mergeValues(val1, val2)
+      )
+
+    val usesAndDefs = UsesAndDefs(func)
     val blockArgsMap = buildBlockArgsMap(func)
 
-    def getDefAndNewValue(use: Use, consts: ConstantsMap): (Def, ConstantAbsVal) =
+    def getDefAndNewValue(
+        use: Use,
+        consts: ConstantsMap
+    ): (Def, ConstantAbsVal) =
       use match
         case vd: Use.VDecl =>
           val d = Def(vd.decl)
-          val newV = vd.decl.rhs.map(e => evalExpr(e, consts)).getOrElse(ConstantAbsVal.Undefined)
-          (d, newV)              
+          val newV = vd.decl.rhs
+            .map(e => evalExpr(e, consts))
+            .getOrElse(ConstantAbsVal.Undefined)
+          (d, newV)
         case a: Use.Assign =>
           val d = Def(a.assign)
-          val newV = evalExpr(a.assign.lhs, consts)
+          val newV = evalExpr(a.assign.rhs, consts)
           (d, newV)
         case bp: Use.BParam =>
           val varInfos = blockArgsMap(BlockArg(bp.label, bp.index))
           val newV = mergeVars(varInfos, consts)
-          val block = func.labelToBlock(bp.label)
+          val block = func.labelToBlock(bp.label) 
           val varInfoDef = VarInfo(block.params(bp.index).v)
           val d = Def.BParam(varInfoDef, bp.label, bp.index)
           (d, newV)
 
     @tailrec
     def iter(todo: List[Use], consts: ConstantsMap): ConstantsMap = todo match
-      case use :: rest =>     
-        val varInfo = use.varInfo
+      case use :: rest =>
         // Determine def and new value.
         val (d, newV) = getDefAndNewValue(use, consts)
-        val oldV = consts.lookup(varInfo)
+        val oldV = consts.lookup(d.varInfo)
         // Check if new value is lower than the old one.
         if newV.isLower(oldV) then
           // Add new items to worklist, update constants map.
-          val consts1 = consts.updated(varInfo, newV)
-          val uses = defUseMap(d)
-          val todo1 = todo ++ uses
+          val consts1 = consts.updated(d.varInfo, newV)
+          val uses = usesAndDefs.getUses(d)
+          val todo1 = rest ++ uses
           iter(todo1, consts1)
         else
           // Go to the next item
@@ -237,8 +195,16 @@ object ConstantPropagation:
 
       case _ => consts
 
-    ???
-    
+    val immediate = getImmediateConstants(func)
+    // Initialize worklist by finding uses of immidiate constants.
+    val todo = immediate
+      .filter((_, v) => v.isConstant)
+      .keys
+      .flatMap(usesAndDefs.getUses)
+      .toList
+
+    iter(todo, immediate)
+
   end computeConstants
 
 // 1. Run all expressions, evaluate immediate constant expression,
