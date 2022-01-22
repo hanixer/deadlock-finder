@@ -2,6 +2,7 @@ package deadlockFinder
 package hir
 
 import common.*
+
 import org.typelevel.paiges.Doc
 
 case class Program(funcs: List[FuncDecl], loc: SourceLoc = SourceLoc(1, 1))
@@ -32,9 +33,9 @@ case class Assignment(lhs: String, rhs: Expr, loc: SourceLoc) extends Stmt:
 case class VarDecl(name: String, t: Type, rhs: Option[Expr], loc: SourceLoc)
     extends Stmt:
   def prettyPrint: Doc =
-    var r = rhs match
+    val r = rhs match
       case Some(e) => " = " +: e.prettyPrint
-      case _       => Doc.empty
+      case _ => Doc.empty
     ("var " + name + ": ") +: (Doc.str(t) + r)
 
 case class IfThenElse(
@@ -82,11 +83,15 @@ trait SimpleExpr extends Expr
 abstract class AbstractVar extends SimpleExpr:
   def name: String
 
-case class IntLiteral(n: Int, loc: SourceLoc) extends SimpleExpr:
-  def prettyPrint: Doc = Doc.str(n)
-
 case class Variable(name: String, loc: SourceLoc) extends AbstractVar:
   def prettyPrint: Doc = Doc.text(name)
+
+case class StaticFieldAccess(className: String, fieldName: String, loc: SourceLoc) 
+    extends SimpleExpr:
+  def prettyPrint: Doc = Doc.text(s"$className.$fieldName")
+
+case class IntLiteral(n: Int, loc: SourceLoc) extends SimpleExpr:
+  def prettyPrint: Doc = Doc.str(n)
 
 case class BinaryExpr(
     op: BinaryOp,
@@ -106,5 +111,5 @@ case class CallExpr(name: String, args: List[SimpleExpr], loc: SourceLoc)
     Doc.str(name) + ("(" +: a :+ ")")
 
 case class UnsupportedConstruct(loc: SourceLoc) extends SimpleExpr, Stmt:
-  def prettyPrint: Doc = Doc.text(s"[unsupported stmt or expr at ${loc}]")
+  def prettyPrint: Doc = Doc.text(s"[unsupported stmt or expr at $loc]")
 

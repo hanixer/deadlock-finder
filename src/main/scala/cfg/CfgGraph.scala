@@ -2,6 +2,7 @@ package deadlockFinder
 package cfg
 
 import lil.*
+
 import scala.collection.mutable
 
 /** Represents controlflow graph (CFG) of a function.
@@ -24,7 +25,7 @@ class CfgGraph(
 
 object CfgGraph:
   type BuilderMap = mutable.Map[String, mutable.ListBuffer[String]]
-  def toImmutable(map: BuilderMap) =
+  def toImmutable(map: BuilderMap): Map[String, List[String]] =
     map.map((k, v) => (k, v.toList)).toMap
 
   class Builder(nodes: List[String]):
@@ -37,8 +38,8 @@ object CfgGraph:
       preds(to).addOne(from)
       succs(from).addOne(to)
 
-    def getPreds = toImmutable(preds)
-    def getSuccs = toImmutable(succs)
+    def getPreds: Map[String, List[String]] = toImmutable(preds)
+    def getSuccs: Map[String, List[String]] = toImmutable(succs)
 
   // TODO: refactor
   def apply(func: FuncDecl): CfgGraph =

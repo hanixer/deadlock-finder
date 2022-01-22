@@ -13,7 +13,7 @@ enum BinaryOp:
   case Plus, Minus, Times, Divide, Less, Greater, LessEquals, GreaterEquals,
   Equals, And, Or
 
-  override def toString(): String = this match
+  override def toString: String = this match
     case Plus          => "+"
     case Minus         => "-"
     case Times         => "*"
@@ -29,7 +29,7 @@ enum BinaryOp:
 enum UnaryOp:
   case Not
 
-  override def toString(): String = this match
+  override def toString: String = this match
     case Not => "!"
 
 case class Param(name: String, typ: Type, loc: SourceLoc) extends AstNode:

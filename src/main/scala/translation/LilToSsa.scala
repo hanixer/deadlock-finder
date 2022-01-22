@@ -3,12 +3,11 @@ package translation
 
 import cfg.{CfgGraph, DominanceFrontiers, Dominators}
 import common.*
-import hir.{BinaryExpr, CallExpr, Expr, SimpleExpr, UnaryExpr, Variable}
+import hir.{AbstractVar, BinaryExpr, CallExpr, Expr, SimpleExpr, UnaryExpr, Variable}
 import lil.*
 
 import scala.annotation.tailrec
 import scala.collection.*
-import deadlockFinder.hir.AbstractVar
 
 object LilToSsa:
   def apply(prog: Program): Program =
@@ -125,7 +124,7 @@ object LilToSsa:
     val blocks = func.body.map(transformBlock)
     func.copy(body = blocks)
 
-  /** State for renaming - a mutable environment, and a mutable global map */
+  /** State for renaming - an immutable environment, and a mutable global map */
   case class RenameState(
       env: Map[String, Int],
       global: mutable.Map[String, Int]

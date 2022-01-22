@@ -1,20 +1,15 @@
 package deadlockFinder
 package translation
 
-import hir.*
 import common.*
+import hir.*
 
-import org.eclipse.jdt.core.dom.{
-  Type as TypeNode,
-  Block as BlockNode,
-  Assignment as AssignmentNode,
-  *
-}
+import org.eclipse.jdt.core.dom.{Assignment as AssignmentNode, Block as BlockNode, Type as TypeNode, *}
 
-import scala.collection.mutable.ListBuffer
-import scala.jdk.CollectionConverters.*
-import scala.collection.mutable.Stack
 import javax.swing.tree.TreePath
+import scala.collection.mutable
+import scala.collection.mutable.{ListBuffer, Stack}
+import scala.jdk.CollectionConverters.*
 
 /** Translates java source code in the form of Eclipse JDT AST to HIR
   * (High-level intermediate representation)
@@ -26,11 +21,11 @@ object SourceToHir:
     Program(visitor.getFuncs)
 
 class Visitor extends ASTVisitor:
-  val TranslateProperty = "Translate"
-  var compilationUnit: CompilationUnit = null
+  private val TranslateProperty = "Translate"
+  private var compilationUnit: CompilationUnit = null
   private val funcs = ListBuffer[FuncDecl]()
-  val stmtsStack: Stack[ListBuffer[(Stmt, SourceLoc)]] = Stack()
-  var tempCounter = 0
+  private val stmtsStack: mutable.Stack[ListBuffer[(Stmt, SourceLoc)]] = mutable.Stack()
+  private var tempCounter = 0
 
   def getFuncs: List[FuncDecl] = funcs.toList
 
@@ -39,7 +34,7 @@ class Visitor extends ASTVisitor:
     if b != null then mkFullName(b)
     else typ.getName.getIdentifier
 
-  def mkFullName(b: ITypeBinding) =
+  def mkFullName(b: ITypeBinding): String =
     b.getQualifiedName
 
   def mkFullName(meth: MethodDeclaration): String =
@@ -112,6 +107,18 @@ class Visitor extends ASTVisitor:
     val stmts = translateBody(node)
     Block(stmts, mkSourceLoc(node))
 
+  def translateVariable(node: ASTNode, binding: IVariableBinding): Unit =
+    val name = binding.getName
+    val loc = mkSourceLoc(node)
+    if binding.isField then
+      if Modifier.isStatic(binding.getModifiers) then
+        val className = mkFullName(binding.getDeclaringClass)
+        val sfa = StaticFieldAccess(className, name, loc)
+        node.setProperty(TranslateProperty, sfa)
+    else
+      val v = Variable(name, loc)
+      node.setProperty(TranslateProperty, v)
+
   def addTempVar(typ: Type, loc: SourceLoc, rhs: Option[Expr] = None): String =
     tempCounter += 1
     val name = s"t~$tempCounter"
@@ -173,9 +180,7 @@ class Visitor extends ASTVisitor:
 
     // Translate body
     val body = translateAndWrapBody(node.getBody)
-
     val loc = mkSourceLoc(node)
-
     val func = FuncDecl(mkFullName(node), params, retType, body, loc)
 
     node.setProperty(TranslateProperty, func)
@@ -205,7 +210,7 @@ class Visitor extends ASTVisitor:
     val cond = getResultSimpleExpr(node.getExpression)
     val condLoc = mkSourceLoc(node.getExpression)
     val condNot = UnaryExpr(UnaryOp.Not, cond, condLoc)
-    var condVar =
+    val condVar =
       Variable(addTempVar(BooleanType, condLoc, Some(condNot)), condLoc)
     addStmt(IfThenElse(condVar, Break(condLoc), None, condLoc))
 
@@ -256,22 +261,24 @@ class Visitor extends ASTVisitor:
       case _ =>
 
   override def endVisit(node: MethodInvocation): Unit =
-    val mb = node.resolveMethodBinding
-    if Modifier.isStatic(mb.getModifiers) then
+    val expr = node.getExpression
+
+    val binding = node.resolveMethodBinding
+    if Modifier.isStatic(binding.getModifiers) then
       val args = node.arguments.asScala.toList.map(a =>
         getResultSimpleExpr(a.asInstanceOf[Expression])
       )
-      val name = mkFullName(mb, node.getName.getIdentifier)
+      val name = mkFullName(binding, node.getName.getIdentifier)
       val loc = mkSourceLoc(node)
       val expr = CallExpr(name, args, loc)
 
       // Make temporary variable if the parent is an expression
       if shouldMakeTemporary(node) then
-        var typ = translateType(node.resolveTypeBinding)
-        var name = addTempVar(typ, loc, Some(expr))
+        val typ = translateType(node.resolveTypeBinding)
+        val name = addTempVar(typ, loc, Some(expr))
         node.setProperty(TranslateProperty, Variable(name, loc))
       else node.setProperty(TranslateProperty, expr)
-    else ??? // Non-static methods are not implemented
+    else println("Non-static methods are not implemented")
 
   override def endVisit(node: PrefixExpression): Unit =
     // TODO: handle increment/decrement
@@ -311,8 +318,8 @@ class Visitor extends ASTVisitor:
 
     // Make temporary variable if the parent is an expression
     if shouldMakeTemporary(node) then
-      var typ = translateType(tb)
-      var name = addTempVar(typ, loc, Some(expr))
+      val typ = translateType(tb)
+      val name = addTempVar(typ, loc, Some(expr))
       node.setProperty(TranslateProperty, Variable(name, loc))
     else node.setProperty(TranslateProperty, expr)
 
@@ -327,13 +334,22 @@ class Visitor extends ASTVisitor:
         addStmt(Assignment(name, rhs, loc))
 
   override def visit(node: SimpleName): Boolean =
-    var v = Variable(node.getIdentifier, mkSourceLoc(node))
-    node.setProperty(TranslateProperty, v)
+    val binding = node.resolveBinding()
+    if binding != null && binding.getKind == IBinding.VARIABLE then
+      translateVariable(node, binding.asInstanceOf[IVariableBinding])
+    false
+
+  override def visit(node: FieldAccess): Boolean =
+    val binding = node.resolveFieldBinding()
+    if binding != null then
+      if Modifier.isStatic(binding.getModifiers) then
+        translateVariable(node, binding)
+      else println("Non-static fields are not supported")
     false
 
   override def visit(node: NumberLiteral): Boolean =
-    val tb = node.resolveTypeBinding
-    val constExpr = node.resolveConstantExpressionValue
+    val tb = node.resolveTypeBinding()
+    val constExpr = node.resolveConstantExpressionValue()
 
     if tb.getName == "int" then
       val e = IntLiteral(constExpr.asInstanceOf[Int], mkSourceLoc(node))

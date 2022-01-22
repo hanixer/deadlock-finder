@@ -2,7 +2,7 @@ package deadlockFinder
 package translation
 
 import common.VoidType
-import hir.IfThenElse
+import hir.{IfThenElse, Variable}
 import lil.*
 
 import scala.annotation.tailrec
@@ -28,7 +28,7 @@ class HirToLil:
     startBlock("end")
     val loc = func.loc
     if func.retTyp != VoidType then
-      finishBlock(Return(Some(hir.Variable("~retVal", loc)), loc))
+      finishBlock(Return(Some(Variable("~retVal", loc)), loc))
     else finishBlock(Return(None, loc))
 
   def translateStmt(stmt: hir.Stmt, next: String): Unit = stmt match
@@ -61,10 +61,10 @@ class HirToLil:
       loopStack.pop()
 
     case v: hir.VarDecl =>
-      addStmt(VarDecl(hir.Variable(v.name, v.loc), v.t, v.rhs, v.loc))
+      addStmt(VarDecl(Variable(v.name, v.loc), v.t, v.rhs, v.loc))
 
     case a: hir.Assignment =>
-      addStmt(Assignment(hir.Variable(a.lhs, a.loc), a.rhs, a.loc))
+      addStmt(Assignment(Variable(a.lhs, a.loc), a.rhs, a.loc))
 
     case b: hir.Break =>
       if loopStack.isEmpty then
