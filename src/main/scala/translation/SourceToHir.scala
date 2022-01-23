@@ -24,7 +24,8 @@ class Visitor extends ASTVisitor:
   private val TranslateProperty = "Translate"
   private var compilationUnit: CompilationUnit = null
   private val funcs = ListBuffer[FuncDecl]()
-  private val stmtsStack: mutable.Stack[ListBuffer[(Stmt, SourceLoc)]] = mutable.Stack()
+  private val stmtsStack: mutable.Stack[ListBuffer[(Stmt, SourceLoc)]] =
+    mutable.Stack()
   private var tempCounter = 0
 
   def getFuncs: List[FuncDecl] = funcs.toList
@@ -261,13 +262,15 @@ class Visitor extends ASTVisitor:
       case _ =>
 
   override def endVisit(node: MethodInvocation): Unit =
-    val expr = node.getExpression
-
     val binding = node.resolveMethodBinding
-    if Modifier.isStatic(binding.getModifiers) then
-      val args = node.arguments.asScala.toList.map(a =>
-        getResultSimpleExpr(a.asInstanceOf[Expression])
-      )
+    if binding != null then
+      val argNodes =
+        if Modifier.isStatic(binding.getModifiers) then
+          node.arguments.asScala.toList
+        else node.getExpression :: node.arguments.asScala.toList
+
+      val args =
+        argNodes.map(a => getResultSimpleExpr(a.asInstanceOf[Expression]))
       val name = mkFullName(binding, node.getName.getIdentifier)
       val loc = mkSourceLoc(node)
       val expr = CallExpr(name, args, loc)
@@ -278,7 +281,7 @@ class Visitor extends ASTVisitor:
         val name = addTempVar(typ, loc, Some(expr))
         node.setProperty(TranslateProperty, Variable(name, loc))
       else node.setProperty(TranslateProperty, expr)
-    else println("Non-static methods are not implemented")
+    else println(s"Unresolved method: $node")
 
   override def endVisit(node: PrefixExpression): Unit =
     // TODO: handle increment/decrement
