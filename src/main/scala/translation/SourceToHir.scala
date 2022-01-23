@@ -4,7 +4,7 @@ package translation
 import common.*
 import hir.*
 
-import org.eclipse.jdt.core.dom.{Assignment as AssignmentNode, Block as BlockNode, Type as TypeNode, *}
+import org.eclipse.jdt.core.dom.{ArrayCreation as JdtArrayCreation, ArrayType as JdtArrayType, Assignment as JdtAssignment, Block as JdtBlock, Type as JdtType, *}
 
 import javax.swing.tree.TreePath
 import scala.collection.mutable
@@ -65,14 +65,17 @@ class Visitor extends ASTVisitor:
     else if p.getNodeType == ASTNode.RETURN_STATEMENT then true
     else false
 
-  def translateType(typeNode: TypeNode): Type =
+  def translateType(typeNode: JdtType): Type =
     val tb = typeNode.resolveBinding()
     translateType(tb)
 
-  def translateType(tb: ITypeBinding): Type =
-    if tb != null then
-      if tb.isPrimitive then
-        tb.getName match
+  def translateType(binding: ITypeBinding): Type =
+    if binding != null then
+      if binding.isArray then
+        val elementType = translateType(binding.getElementType)
+        ArrayType(elementType)
+      else if binding.isPrimitive then
+        binding.getName match
           case "int"     => IntType
           case "double"  => DoubleType
           case "float"   => FloatType
@@ -331,7 +334,7 @@ class Visitor extends ASTVisitor:
       node.setProperty(TranslateProperty, Variable(name, loc))
     else node.setProperty(TranslateProperty, expr)
 
-  override def endVisit(node: AssignmentNode): Unit =
+  override def endVisit(node: JdtAssignment): Unit =
     // Now we support assignment only to a variable,
     // ignoring assignment to an array element or a field.
     node.getLeftHandSide match
@@ -340,6 +343,29 @@ class Visitor extends ASTVisitor:
         val rhs = getResultExpr(node.getRightHandSide)
         val loc = mkSourceLoc(node)
         addStmt(Assignment(name, rhs, loc))
+
+  override def visit(node: JdtArrayCreation): Boolean =
+    // For now, only arrays of single dimension are supported.
+    val sizeNode = node.dimensions().get(0).asInstanceOf[ASTNode]
+    sizeNode.accept(this)
+    val sizeExpr = getResultSimpleExpr(sizeNode)
+    val elementType = translateType(node.getType.getElementType)
+    val loc = mkSourceLoc(node)
+    val expr = ArrayCreation(sizeExpr, elementType, loc)
+    node.setProperty(TranslateProperty, expr)
+    false
+
+  override def visit(node: ArrayInitializer): Boolean =
+    // For now, we just translate it to array creation
+    // without initialization of elements
+    if node.getParent.getNodeType != ASTNode.ARRAY_CREATION then
+      val size = node.expressions().size()
+      val loc = mkSourceLoc(node)
+      val elementType = translateType(node.resolveTypeBinding().getElementType)
+      val sizeExpr = IntLiteral(size, loc)
+      val expr = ArrayCreation(sizeExpr, elementType, loc)
+      node.setProperty(TranslateProperty, expr)
+    false
 
   override def visit(node: SimpleName): Boolean =
     translateVariable(node)

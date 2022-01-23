@@ -20,3 +20,6 @@ case object VoidType extends Type:
 
 case class ClassType() extends Type:
   override def toString: String = "someClass"
+
+case class ArrayType(elementType: Type) extends Type:
+  override def toString: String = s"$elementType[]"

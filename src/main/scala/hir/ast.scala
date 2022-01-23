@@ -110,6 +110,10 @@ case class CallExpr(name: String, args: List[SimpleExpr], loc: SourceLoc)
     val a = PrettyPrint.separateComma(args.map(_.prettyPrint))
     Doc.str(name) + ("(" +: a :+ ")")
 
+case class ArrayCreation(sizeExpr: SimpleExpr, elementType: Type, loc: SourceLoc) extends Expr:
+  override def prettyPrint: Doc = 
+    Doc.text(s"new $elementType[") + sizeExpr.prettyPrint + Doc.text("]") 
+
 case class UnsupportedConstruct(loc: SourceLoc) extends SimpleExpr, Stmt:
   def prettyPrint: Doc = Doc.text(s"[unsupported stmt or expr at $loc]")
 
