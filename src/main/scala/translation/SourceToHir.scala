@@ -120,6 +120,11 @@ class Visitor extends ASTVisitor:
       val v = Variable(name, loc)
       node.setProperty(TranslateProperty, v)
 
+  def translateVariable(node: Name): Unit =
+    val binding = node.resolveBinding()
+    if binding != null && binding.getKind == IBinding.VARIABLE then
+      translateVariable(node, binding.asInstanceOf[IVariableBinding])
+
   def addTempVar(typ: Type, loc: SourceLoc, rhs: Option[Expr] = None): String =
     tempCounter += 1
     val name = s"t~$tempCounter"
@@ -337,17 +342,17 @@ class Visitor extends ASTVisitor:
         addStmt(Assignment(name, rhs, loc))
 
   override def visit(node: SimpleName): Boolean =
-    val binding = node.resolveBinding()
-    if binding != null && binding.getKind == IBinding.VARIABLE then
-      translateVariable(node, binding.asInstanceOf[IVariableBinding])
+    translateVariable(node)
+    false
+
+  override def visit(node: QualifiedName): Boolean =
+    translateVariable(node)
     false
 
   override def visit(node: FieldAccess): Boolean =
     val binding = node.resolveFieldBinding()
     if binding != null then
-      if Modifier.isStatic(binding.getModifiers) then
-        translateVariable(node, binding)
-      else println("Non-static fields are not supported")
+      translateVariable(node, binding)
     false
 
   override def visit(node: NumberLiteral): Boolean =
