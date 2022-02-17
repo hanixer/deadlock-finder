@@ -33,7 +33,7 @@ public class Example1 {
     val cfg = CfgGraph(func)
     println(PrettyPrint(func))
     assert(cfg.getSuccs("bb1") === List("bb2"))
-    assert(cfg.getPreds("bb1") === List())
+    assert(cfg.getPreds("bb1") === List("entry"))
     assert(cfg.getSuccs("bb2") === List("bb4", "bb3"))
     assert(cfg.getPreds("bb2") === List("bb1", "bb8"))
   }

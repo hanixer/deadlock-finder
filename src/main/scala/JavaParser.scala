@@ -2,7 +2,7 @@ package deadlockFinder
 
 import org.eclipse.jdt.core.dom.{AST, ASTParser, CompilationUnit}
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 
 object JavaParser:
   def parseFile(file: String): CompilationUnit =
@@ -14,7 +14,15 @@ object JavaParser:
   
   def parse(source: String): CompilationUnit =
     val parser = ASTParser.newParser(AST.JLS16)
-    val mpjJar = Path.of(System.getenv("MPJ_HOME")).resolve("lib").resolve("mpj.jar")
+    val mpjHomeStr = System.getenv("MPJ_HOME")
+    if mpjHomeStr == null || mpjHomeStr.isEmpty then
+      throw new Exception("MPJ_HOME environment variable is not set")
+
+    val mpjHome = Path.of(mpjHomeStr)
+    if !Files.exists(mpjHome) then
+      throw new Exception("Please set MPJ_HOME environment variable to existing location of MPJ Express library.")
+
+    val mpjJar = mpjHome.resolve("lib").resolve("mpj.jar")
     parser.setSource(source.toCharArray)
     parser.setKind(ASTParser.K_COMPILATION_UNIT)
     parser.setResolveBindings(true)
