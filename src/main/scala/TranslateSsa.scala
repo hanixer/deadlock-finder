@@ -1,8 +1,8 @@
 package deadlockFinder
 
-import hir.{Expr, IntLiteral, Variable}
-import translation.SourceToHir
-import translation.HirToLil
+import hil.{Expr, IntLiteral, Variable}
+import translation.SourceToHil
+import translation.HilToLil
 import translation.LilToSsa
 import common.PrettyPrint
 
@@ -14,8 +14,8 @@ object TranslateSsa:
   def main(args: Array[String]): Unit =
     val file = args(0)
     val node: CompilationUnit = JavaParser.parseFile(file)
-    val hir = SourceToHir(node)
-    val lil = HirToLil(hir)
+    val hil = SourceToHil(node)
+    val lil = HilToLil(hil)
     val ssa = LilToSsa(lil)
     println(PrettyPrint(ssa))
 

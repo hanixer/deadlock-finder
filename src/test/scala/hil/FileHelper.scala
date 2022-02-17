@@ -1,5 +1,5 @@
 package deadlockFinder
-package hir
+package hil
 
 import org.scalatest.Assertions.convertToEqualizer
 

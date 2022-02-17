@@ -3,7 +3,7 @@ package translation
 
 import cfg.{CfgGraph, DominanceFrontiers, Dominators}
 import common.*
-import hir.{AbstractVar, BinaryExpr, CallExpr, Expr, SimpleExpr, UnaryExpr, Variable}
+import hil.{AbstractVar, BinaryExpr, CallExpr, Expr, SimpleExpr, UnaryExpr, Variable}
 import lil.*
 
 import scala.annotation.tailrec

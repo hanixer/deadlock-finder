@@ -4,8 +4,8 @@ package common
 import org.typelevel.paiges.Doc
 import cfg.CfgGraph
 import deadlockFinder.lil.FuncDecl
-import deadlockFinder.hir.Variable
-import deadlockFinder.hir.AbstractVar
+import deadlockFinder.hil.Variable
+import deadlockFinder.hil.AbstractVar
 
 object PrettyPrint:
   def apply(node: AstNode): String =

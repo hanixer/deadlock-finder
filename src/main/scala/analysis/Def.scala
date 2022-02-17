@@ -1,7 +1,7 @@
 package deadlockFinder
 package analysis
 
-import hir.{AbstractVar, BinaryExpr, CallExpr, Expr, IntLiteral, SimpleExpr, UnaryExpr, Variable}
+import hil.{AbstractVar, BinaryExpr, CallExpr, Expr, IntLiteral, SimpleExpr, UnaryExpr, Variable}
 import lil.*
 import common.*
 

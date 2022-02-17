@@ -18,9 +18,9 @@
         "type": "scala",
         "request": "launch",
         // configuration name visible for the user
-        "name": "Launch TranslateHir",
+        "name": "Launch TranslateHil",
         // full name of the class to run
-        "mainClass": "deadlockFinder.TranslateHir",
+        "mainClass": "deadlockFinder.TranslateHil",
         // optional arguments for the main class
         "args": ["examples\\showcase\\Example9.java"],
         // optional jvm properties to use

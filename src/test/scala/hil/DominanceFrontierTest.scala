@@ -1,8 +1,8 @@
-package hir
+package hil
 
 import org.scalatest.funsuite.AnyFunSuite
-import deadlockFinder.translation.HirToLil
-import deadlockFinder.translation.SourceToHir
+import deadlockFinder.translation.HilToLil
+import deadlockFinder.translation.SourceToHil
 import deadlockFinder.JavaParser
 import deadlockFinder.cfg.CfgGraph
 import deadlockFinder.common.PrettyPrint

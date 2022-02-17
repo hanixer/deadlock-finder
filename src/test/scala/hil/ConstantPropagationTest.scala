@@ -1,8 +1,8 @@
 package deadlockFinder
-package hir
+package hil
 
 import org.scalatest.funsuite.AnyFunSuite
-import deadlockFinder.translation.{HirToLil, LilToSsa, SourceToHir}
+import deadlockFinder.translation.{HilToLil, LilToSsa, SourceToHil}
 import deadlockFinder.JavaParser
 import deadlockFinder.analysis.ConstantPropagation
 import deadlockFinder.analysis.ConstantPropagation.{ConstantAbsVal}
@@ -30,7 +30,7 @@ public class Example1 {
     }
 }
 """
-    val lil = LilToSsa(HirToLil(SourceToHir(JavaParser.parse(source))))
+    val lil = LilToSsa(HilToLil(SourceToHil(JavaParser.parse(source))))
     val func = lil.funcs.head
     val m = ConstantPropagation.getImmediateConstants(func)
 
@@ -60,8 +60,8 @@ public class Example8 {
 }
 """
     val java = JavaParser.parse(source1)
-    val hir = SourceToHir(java)
-    val lil = HirToLil(hir)
+    val hil = SourceToHil(java)
+    val lil = HilToLil(hil)
     val ssa = LilToSsa(lil)
     val func = ssa.funcs.head
     val consts = ConstantPropagation.computeConstants(func)

@@ -2,9 +2,9 @@ package deadlockFinder
 package lil
 
 import common.*
-import hir.{Expr, SimpleExpr, CallExpr, Variable}
+import hil.{Expr, SimpleExpr, CallExpr, Variable}
 import org.typelevel.paiges.Doc
-import deadlockFinder.hir.AbstractVar
+import deadlockFinder.hil.AbstractVar
 
 case class Program(funcs: List[FuncDecl], loc: SourceLoc = SourceLoc(1, 1))
     extends AstNode:

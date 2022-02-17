@@ -2,7 +2,7 @@ package deadlockFinder
 package translation
 
 import common.*
-import hir.*
+import hil.*
 
 import org.eclipse.jdt.core.dom.{ArrayCreation as JdtArrayCreation, ArrayType as JdtArrayType, Assignment as JdtAssignment, Block as JdtBlock, Type as JdtType, *}
 
@@ -11,10 +11,10 @@ import scala.collection.mutable
 import scala.collection.mutable.{ListBuffer, Stack}
 import scala.jdk.CollectionConverters.*
 
-/** Translates java source code in the form of Eclipse JDT AST to HIR
-  * (High-level intermediate representation)
+/** Translates java source code in the form of Eclipse JDT AST to HIL
+  * (High-level intermediate language)
   */
-object SourceToHir:
+object SourceToHil:
   def apply(cu: CompilationUnit): Program =
     val visitor = new Visitor
     cu.accept(visitor)

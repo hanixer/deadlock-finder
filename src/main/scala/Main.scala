@@ -2,8 +2,8 @@ package deadlockFinder
 
 import cfg.{CfgGraph, Dominators}
 import common.PrettyPrint
-import hir.{Expr, IntLiteral, Variable}
-import translation.{HirToLil, LilToSsa, SourceToHir}
+import hil.{Expr, IntLiteral, Variable}
+import translation.{HilToLil, LilToSsa, SourceToHil}
 
 import org.eclipse.jdt.core.dom.*
 
@@ -14,8 +14,8 @@ object Main:
   def main(args: Array[String]): Unit =
     val file = "examples/showcase/Example7.java"
     val node: CompilationUnit = JavaParser.parseFile(file)
-    val hir = SourceToHir(node)
-    val lil = HirToLil(hir)
+    val hil = SourceToHil(node)
+    val lil = HilToLil(hil)
     val ssa = LilToSsa(lil)
 
     Files.writeString(Path.of("out.ssa"), PrettyPrint(ssa))
