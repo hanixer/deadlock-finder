@@ -149,7 +149,7 @@ object LilToSsa:
     ): List[Block] =
       // Rename variables in current block.
       val (block1, state1) = renameVariables(block, state, doms)
-      // Recurr to children blocks.
+      // Recur into children blocks.
       val children = doms.getDomTreeChildren(block.label).map(func.labelToBlock)
       val childrenRes = children.foldLeft(acc)((acc, childB) =>
         renameAndCollect(childB, state1, acc)

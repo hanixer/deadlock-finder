@@ -27,6 +27,9 @@ case class FuncDecl(
 
 trait Stmt extends AstNode
 
+case class Assert(expr: Expr, loc: SourceLoc) extends Stmt:
+  def prettyPrint: Doc = "assert " +: expr.prettyPrint
+
 case class Assignment(lhs: String, rhs: Expr, loc: SourceLoc) extends Stmt:
   def prettyPrint: Doc = (lhs + " = ") +: rhs.prettyPrint
 

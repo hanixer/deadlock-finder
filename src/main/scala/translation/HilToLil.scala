@@ -81,6 +81,9 @@ class HilToLil:
     case c: hil.CallStmt =>
       addStmt(CallStmt(c.callExpr))
 
+    case a: hil.Assert =>
+      addStmt(Assert(a.expr, a.loc))
+
   def translateBlock(b: hil.Block, next: String): Unit =
     val size = b.stmts.length
     @tailrec

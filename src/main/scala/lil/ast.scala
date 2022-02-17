@@ -4,7 +4,7 @@ package lil
 import common.*
 import hil.{Expr, SimpleExpr, CallExpr, Variable}
 import org.typelevel.paiges.Doc
-import deadlockFinder.hil.AbstractVar
+import hil.AbstractVar
 
 case class Program(funcs: List[FuncDecl], loc: SourceLoc = SourceLoc(1, 1))
     extends AstNode:
@@ -60,6 +60,9 @@ object Block:
   ): Block = Block(label, List.empty, stmts, transfer, loc)
 
 trait Stmt extends AstNode
+
+case class Assert(expr: Expr, loc: SourceLoc) extends Stmt:
+  def prettyPrint: Doc = "assert " +: expr.prettyPrint
 
 case class Assignment(lhs: AbstractVar, rhs: Expr, loc: SourceLoc) extends Stmt:
   def prettyPrint: Doc = 
