@@ -114,14 +114,14 @@ class Visitor extends ASTVisitor:
   def translateVariable(node: ASTNode, binding: IVariableBinding): Unit =
     val name = binding.getName
     val loc = mkSourceLoc(node)
-    if binding.isField then
-      if Modifier.isStatic(binding.getModifiers) then
-        val className = mkFullName(binding.getDeclaringClass)
-        val sfa = StaticFieldAccess(className, name, loc)
-        node.setProperty(TranslateProperty, sfa)
-    else
+    val static = Modifier.isStatic(binding.getModifiers)
+    if !binding.isField then
       val v = Variable(name, loc)
       node.setProperty(TranslateProperty, v)
+    else if static then
+      val className = mkFullName(binding.getDeclaringClass)
+      val sfa = StaticFieldAccess(className, name, loc)
+      node.setProperty(TranslateProperty, sfa)
 
   def translateVariable(node: Name): Unit =
     val binding = node.resolveBinding()
