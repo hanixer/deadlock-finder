@@ -32,24 +32,24 @@ class PredicatesPropagation:
     for (b <- func.body) do
       println(b.label)
     val usesAndDefs = UsesAndDefs(func)
-    
+        
     ???
 
-  def evaluate(expr: Expr, env: Map[AbstractVar, Expr]): Option[ProcessPredicate] = expr match
+  def evaluate(expr: Expr, usesAndDefs: UsesAndDefs): Option[ProcessPredicate] = expr match
     case UnaryExpr(UnaryOp.Not, v: SsaVariable, _) =>
-      env.get(v)
+      usesAndDefs.getDefiningExpr(v)
         .flatMap { defExpr =>
-          evaluate(defExpr, env)
+          evaluate(defExpr, usesAndDefs)
             .map { predicate => predicate.copy(equal = !predicate.equal) }
         }
 
     case v: SsaVariable =>
-      env.get(v)
+      usesAndDefs.getDefiningExpr(v)
         .flatMap { defExpr =>
           // Convert expression to process predicate.
           defExpr match
             case BinaryExpr(BinaryOp.Equals, lhs, n: IntLiteral, _) =>
-              if isRankCall(lhs, env) then
+              if isRankCall(lhs, usesAndDefs) then
                 Some(ProcessPredicate(true, n.n))
               else None
             case _ => None
@@ -58,8 +58,10 @@ class PredicatesPropagation:
     case _ => None
 
   /** Returns true if a variable contains value of Rank() call or it is a Rank() call expression. */
-  def isRankCall(expr: Expr, env: Map[AbstractVar, Expr]): Boolean = expr match
+  def isRankCall(expr: Expr, usesAndDefs: UsesAndDefs): Boolean = expr match
     case v: SsaVariable =>
-      env.get(v).exists(isRankCall(_, env))
+      usesAndDefs.getDefiningExpr(v)
+        .exists(isRankCall(_, usesAndDefs))
     case call: CallExpr => call.name == "mpi.Comm.Rank"
     case _ => false
+    

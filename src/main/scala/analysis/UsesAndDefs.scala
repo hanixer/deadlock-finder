@@ -36,6 +36,8 @@ class UsesAndDefs(uses: List[Use], defs: List[Def]):
 
   def getDefiningExpr(varInfo: VarInfo): Option[Expr] = definingExprs.get(varInfo)
 
+  def getDefiningExpr(v: AbstractVar): Option[Expr] = getDefiningExpr(VarInfo(v))
+
 object UsesAndDefs:
   def getUsesInExpr(expr: Expr): List[VarInfo] = expr match
     case b: BinaryExpr  => getUsesInExpr(b.lhs) ++ getUsesInExpr(b.rhs)
