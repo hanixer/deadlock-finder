@@ -14,13 +14,27 @@ import common.*
 /** Contains various query methods related to uses and defs. */
 class UsesAndDefs(uses: List[Use], defs: List[Def]):
   val defUseMap: Map[Def, Set[Use]] =
-    defs.map(d => (d, uses.filter(u => u.varInfo == d.varInfo).toSet)).toMap
+    defs.map { d =>
+      val u = uses.filter(u => u.varInfo == d.varInfo).toSet
+      (d, u)
+    }.toMap
 
   val varInfoUseMap: Map[VarInfo, Set[Use]] =
     uses.groupMap(_.varInfo)(identity).map((k, v) => (k, v.toSet))
 
+  val definingExprs: Map[VarInfo, Expr] =
+    defs.flatMap { d => d match
+      case Def.VDecl(varInfo, VarDecl(_, _, Some(expr), _)) =>
+        Some(varInfo, expr)
+      case Def.Assign(varInfo, Assignment(_, expr, _)) =>
+        Some(varInfo, expr)
+    }.toMap
+
   def getUses(varInfo: VarInfo): Set[Use] = varInfoUseMap(varInfo)
+
   def getUses(d: Def): Set[Use] = defUseMap(d)
+
+  def getDefiningExpr(varInfo: VarInfo): Option[Expr] = definingExprs.get(varInfo)
 
 object UsesAndDefs:
   def getUsesInExpr(expr: Expr): List[VarInfo] = expr match
@@ -79,3 +93,8 @@ object UsesAndDefs:
     val uses = func.body.flatMap(getUsesInBlock)
 
     new UsesAndDefs(uses, defsP ++ defsB)
+
+  def getDefs(func: FuncDecl): List[Def] =
+    val defsP = funcParamsToDefs(func.params)
+    val defsB = func.body.flatMap(getDefsInBlock)
+    defsP ++ defsB

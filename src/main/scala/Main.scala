@@ -5,10 +5,10 @@ import common.PrettyPrint
 import hil.{Expr, IntLiteral, Variable}
 import translation.{HilToLil, LilToSsa, SourceToHil}
 
+import deadlockFinder.analysis.ConstantPropagation
 import org.eclipse.jdt.core.dom.*
 
 import java.nio.file.{Files, Path}
-import deadlockFinder.analysis.ConstantPropagation
 
 object Main:
   def main(args: Array[String]): Unit =

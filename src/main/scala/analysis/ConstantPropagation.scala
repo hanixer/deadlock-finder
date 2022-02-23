@@ -109,7 +109,7 @@ object ConstantPropagation:
   case class BlockArg(label: String, pos: Int)
 
   /** Build a map that answers a question: Which variables are passed to a block
-    * to a give position?
+    * to a given position?
     */
   def buildBlockArgsMap(func: FuncDecl): Map[BlockArg, Set[VarInfo]] =
     def visitArgs(
@@ -206,6 +206,7 @@ object ConstantPropagation:
     iter(todo, immediate)
 
   end computeConstants
+end ConstantPropagation
 
 // 1. Run all expressions, evaluate immediate constant expression,
 //    i.e. those containing only immediate constants.

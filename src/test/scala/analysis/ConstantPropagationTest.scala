@@ -1,16 +1,13 @@
 package deadlockFinder
-package hil
+package analysis
 
 import org.scalatest.funsuite.AnyFunSuite
 import deadlockFinder.translation.{HilToLil, LilToSsa, SourceToHil}
 import deadlockFinder.JavaParser
-import deadlockFinder.analysis.ConstantPropagation
-import deadlockFinder.analysis.ConstantPropagation.{ConstantAbsVal}
-import deadlockFinder.analysis.VarInfo
-
+import deadlockFinder.analysis.{ConstantPropagation, VarInfo}
 import deadlockFinder.cfg.CfgGraph
 import deadlockFinder.common.PrettyPrint
-import deadlockFinder.analysis.Use
+
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -34,11 +31,11 @@ public class Example1 {
     val func = lil.funcs.head
     val m = ConstantPropagation.getImmediateConstants(func)
 
-    assert(m(VarInfo("x", Some(0))) === ConstantAbsVal.Constant(6))
-    assert(m(VarInfo("y", Some(0))) === ConstantAbsVal.Constant(3))
-    assert(m(VarInfo("b", Some(0))) === ConstantAbsVal.Undefined)
-    assert(m(VarInfo("z", Some(1))) === ConstantAbsVal.Constant(5))
-    assert(m(VarInfo("z", Some(0))) === ConstantAbsVal.Undefined)
+    assert(m(VarInfo("x", Some(0))) === ConstantPropagation.ConstantAbsVal.Constant(6))
+    assert(m(VarInfo("y", Some(0))) === ConstantPropagation.ConstantAbsVal.Constant(3))
+    assert(m(VarInfo("b", Some(0))) === ConstantPropagation.ConstantAbsVal.Undefined)
+    assert(m(VarInfo("z", Some(1))) === ConstantPropagation.ConstantAbsVal.Constant(5))
+    assert(m(VarInfo("z", Some(0))) === ConstantPropagation.ConstantAbsVal.Undefined)
   }
   test("example 2") {
 
@@ -65,6 +62,6 @@ public class Example8 {
     val ssa = LilToSsa(lil)
     val func = ssa.funcs.head
     val consts = ConstantPropagation.computeConstants(func)
-    assert(consts(VarInfo("x", Some(2))) === ConstantAbsVal.NotConstant)
-    assert(consts(VarInfo("x", Some(1))) === ConstantAbsVal.Constant(68))
+    assert(consts(VarInfo("x", Some(2))) === ConstantPropagation.ConstantAbsVal.NotConstant)
+    assert(consts(VarInfo("x", Some(1))) === ConstantPropagation.ConstantAbsVal.Constant(68))
   }
