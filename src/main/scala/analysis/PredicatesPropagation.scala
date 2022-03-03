@@ -23,11 +23,9 @@ object PredicatesPropagation:
       dominators: Dominators
   ): List[(String, List[ProcessPredicate])] =
     val predicates = extractPredicates(block, usesAndDefs)
-    println(s"propagate ::: $predicates")
     val dominated = dominators.getDominatedNodes(block.label)
     val head = (block.label, predicates)
     val tail = dominated.map(other => (other, predicates)).toList
-//    println(s"propagate ::: $head ::: $tail")
     head :: tail
 
   def extractPredicates(
@@ -51,15 +49,12 @@ object PredicatesPropagation:
       case v: AbstractVar =>
         usesAndDefs
           .getDefiningExpr(v)
-          .flatMap { defExpr =>
-            // Convert expression to process predicate.
-            defExpr match
-              case BinaryExpr(BinaryOp.Equals, lhs, n: IntLiteral, _) =>
-                if isRankCall(lhs, usesAndDefs) then
-                  Some(ProcessPredicate(true, n.n))
-                else None
-              case _ => None
-          }
+          .flatMap(evaluate(_, usesAndDefs))
+
+      case BinaryExpr(BinaryOp.Equals, lhs, n: IntLiteral, _) =>
+        if isRankCall(lhs, usesAndDefs) then
+          Some(ProcessPredicate(true, n.n))
+        else None
 
       case _ => None
 
