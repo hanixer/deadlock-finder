@@ -23,7 +23,10 @@ object AssertInsertion:
       val negativeAssert = Assert(negation, ite.cond.loc)
       val thenStmt1 = transformStmt(ite.thenStmt)
       val thenStmt2 = addStmtOrMakeBlock(thenStmt1, positiveAssert)
-      val elseStmt = ite.elseStmt.map(s => addStmtOrMakeBlock(s, negativeAssert)).orElse(Some(negativeAssert))
+      val elseStmt = ite.elseStmt.map { s =>
+        val s1 = transformStmt(s)
+        addStmtOrMakeBlock(s1, negativeAssert)
+      }.orElse(Some(negativeAssert))
       ite.copy(thenStmt = thenStmt2, elseStmt = elseStmt)
     case l: Loop =>
       val body = transformStmt(l.body)

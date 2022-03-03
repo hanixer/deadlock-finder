@@ -52,16 +52,16 @@ object LilToSsa:
   def buildVarToDefBlock(func: FuncDecl): Map[String, List[String]] =
     def isTemp(name: String): Boolean = name.startsWith("t~")
     val pairs =
-      func.body.flatMap(b =>
-        b.stmts.flatMap(s =>
+      func.body.flatMap { b =>
+        b.stmts.flatMap { s =>
           s match
-            case v: VarDecl if !isTemp(v.v.name) =>
+            case v: VarDecl =>
               Some(v.v.name, b.label)
-            case a: Assignment if !isTemp(a.lhs.name) =>
+            case a: Assignment =>
               Some(a.lhs.name, b.label)
             case _ => None
-        )
-      )
+        }
+      }
     pairs.groupMap(_._1)(_._2)
 
   /** Find all blocks in which the specified must be added as a phi parameter. */
@@ -202,9 +202,10 @@ object LilToSsa:
         val vars = j.vars.map(e => handleVariable(e, state))
         j.copy(vars = vars)
       case cj: CondJump =>
+        val cond = handleSimpleExpr(cj.cond, state)
         val thenArgs = cj.thenArgs.map(e => handleVariable(e, state))
         val elseArgs = cj.elseArgs.map(e => handleVariable(e, state))
-        cj.copy(thenArgs = thenArgs, elseArgs = elseArgs)
+        cj.copy(cond = cond, thenArgs = thenArgs, elseArgs = elseArgs)
       case r: Return =>
         val expr = r.expr.map(e => handleSimpleExpr(e, state))
         r.copy(expr = expr)
@@ -224,6 +225,10 @@ object LilToSsa:
           (CallStmt(c.callExpr.copy(args = args)), state)
         case t: Transfer =>
           (handleTransfer(t, state), state)
+        case a: Assert =>
+          val expr = handleExpr(a.expr, state)
+          (a.copy(expr = expr), state)
+        case _ => (stmt, state)
 
     // Process block params.
     val (params, state1) =

@@ -28,6 +28,7 @@ class UsesAndDefs(uses: List[Use], defs: List[Def]):
         Some(varInfo, expr)
       case Def.Assign(varInfo, Assignment(_, expr, _)) =>
         Some(varInfo, expr)
+      case _ => None
     }.toMap
 
   def getUses(varInfo: VarInfo): Set[Use] = varInfoUseMap(varInfo)
