@@ -3,7 +3,9 @@ package analysis
 
 import hil.{AbstractVar, BinaryExpr, CallExpr, Expr, IntLiteral, UnaryExpr}
 import common.{BinaryOp, UnaryOp}
-import lil.{FuncDecl, SsaVariable}
+import lil.{Assert, Block, FuncDecl, SsaVariable}
+
+import deadlockFinder.cfg.{CfgGraph, Dominators}
 
 // We need a way to extract predicates from expressions.
 // What data do we need to extract a predicate?
@@ -32,8 +34,23 @@ class PredicatesPropagation:
     for (b <- func.body) do
       println(b.label)
     val usesAndDefs = UsesAndDefs(func)
-        
-    ???
+    val cfg = CfgGraph(func)
+    val dominators = Dominators(cfg)
+
+    func.body.flatMap { block => propagateForBlock(block, usesAndDefs, dominators) }
+      .groupMap(_._1)(_._2)
+      .map { (k, v) => (k, v.flatten.toSet) }
+
+  def propagateForBlock(block: Block, usesAndDefs: UsesAndDefs, dominators: Dominators): List[(String, Set[ProcessPredicate])] =
+    val predicates = extractPredicates(block, usesAndDefs)
+    val dominated = dominators.getDominatedNodes(block.label)
+    (block.label, predicates) :: dominated.map(other => (other, predicates)).toList
+
+  def extractPredicates(block: Block, usesAndDefs: UsesAndDefs): Set[ProcessPredicate] =
+    block.stmts
+      .filter(_.isInstanceOf[Assert])
+      .flatMap(a => evaluate(a.asInstanceOf[Assert].expr, usesAndDefs))
+      .toSet
 
   def evaluate(expr: Expr, usesAndDefs: UsesAndDefs): Option[ProcessPredicate] = expr match
     case UnaryExpr(UnaryOp.Not, v: SsaVariable, _) =>

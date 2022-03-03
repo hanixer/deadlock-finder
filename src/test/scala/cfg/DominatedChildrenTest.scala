@@ -1,4 +1,5 @@
-package hil
+package deadlockFinder
+package cfg
 
 import org.scalatest.funsuite.AnyFunSuite
 import deadlockFinder.translation.HilToLil
@@ -6,9 +7,8 @@ import deadlockFinder.translation.SourceToHil
 import deadlockFinder.JavaParser
 import deadlockFinder.cfg.CfgGraph
 import deadlockFinder.common.PrettyPrint
-import deadlockFinder.cfg.Dominators
 
-class DominanceFrontierTest extends AnyFunSuite:
+class DominatedChildrenTest extends AnyFunSuite:
   test("example 1") {
     val nodes = List("r", "A", "B", "C", "D", "E")
     val edges = List(
@@ -19,16 +19,15 @@ class DominanceFrontierTest extends AnyFunSuite:
       ("D", "A"),
       ("D", "E"),
       ("C", "D"),
-      ("C", "E"),
+      ("C", "E")
     )
     val entry = "r"
     val cfg = CfgGraph(nodes, edges, entry)
     val doms = Dominators(cfg)
 
-    assert(doms.getDominanceFrontier("B") === Set("D"))
-    assert(doms.getDominanceFrontier("C") === Set("D", "E"))
-    assert(doms.getDominanceFrontier("D") === Set("E", "A"))
-    assert(doms.getDominanceFrontier("E") === Set())
-    assert(doms.getDominanceFrontier("A") === Set("A"))
+    assert(doms.getDomTreeChildren("A") === Set("B", "C", "D", "E"))
+    assert(doms.getDomTreeChildren("B") === Set())
+    assert(doms.getDomTreeChildren("C") === Set())
+    assert(doms.getDomTreeChildren("D") === Set())
+    assert(doms.getDomTreeChildren("E") === Set())
   }
-    

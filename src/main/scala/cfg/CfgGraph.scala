@@ -5,7 +5,7 @@ import lil.*
 
 import scala.collection.mutable
 
-/** Represents controlflow graph (CFG) of a function.
+/** Represents control-flow graph (CFG) of a function.
   */
 class CfgGraph(
     preds: Map[String, List[String]],

@@ -3,26 +3,37 @@ package cfg
 
 import scala.collection.mutable
 import javax.lang.model.element.ModuleElement.DirectiveKind
+import scala.annotation.tailrec
 
 type DominanceFrontiers = Map[String, Set[String]]
+
 type DominatorTree = Map[String, Set[String]]
 
 class Dominators(cfg: CfgGraph):
   val immediateDoms: Map[String, String] =
     Dominators.findImmediateDominators(cfg)
+
   val df: DominanceFrontiers =
     Dominators.findDominanceFrontiers(cfg, immediateDoms)
+
   val dtree: DominatorTree =
     Dominators.computeDominatorTree(immediateDoms)
-  
+
+  /** Returns dominance frontier for the given node. */
   def getDominanceFrontier(node: String): Set[String] =
     df(node)
-  
+
+  /** Returns a set of children of the given node in dominance tree. */
   def getDomTreeChildren(node: String): Set[String] =
-    dtree.get(node).getOrElse(Set.empty)
+    dtree.getOrElse(node, Set.empty)
+
+  /** Returns a set of nodes that are dominated by the given node. */
+  def getDominatedNodes(node: String): Set[String] =
+    val children = getDomTreeChildren(node)
+    children.flatMap(getDominatedNodes)
+      .union(children)
 
 object Dominators:
-
   def apply(cfg: CfgGraph): Dominators =
     new Dominators(cfg)
 
@@ -44,6 +55,7 @@ object Dominators:
       )
       .toMap
 
+    @tailrec
     def intersectPreds(newIdom: Int, preds: List[Int]): Int = preds match
       case p :: rest =>
         if newIdom == Undefined then
@@ -57,6 +69,7 @@ object Dominators:
           intersectPreds(newIdom, rest)
       case _ => newIdom
 
+    @tailrec
     def intersect(n1: Int, n2: Int): Int =
       // "Climb" up the dominator tree.
       if n1 > n2 then intersect(doms(n1), n2)
@@ -74,7 +87,8 @@ object Dominators:
           doms(node) = newIdom
           changed = true
 
-    doms.zipWithIndex.map((idom, node) => (rposta(node), rposta(idom)))
+    doms.zipWithIndex
+      .map((idom, node) => (rposta(node), rposta(idom)))
       .filter((n, _) => n != cfg.entry) // Entry node - no immediate dominator.
       .toMap
 
@@ -95,6 +109,7 @@ object Dominators:
     val doms = findImmediateDominators(cfg)
     val joins = cfg.getAllNodes.filter(n => cfg.getPreds(n).length > 1)
 
+    @tailrec
     def walkUpDoms(join: String, idom: String, curr: String): Unit =
       if curr != idom then
         df(curr).addOne(join)
@@ -116,6 +131,7 @@ object Dominators:
     list.toList.reverse
 
   def computeDominatorTree(doms: Map[String, String]): DominatorTree =
-    doms.toSeq.map((k, v) => (v, k))
+    doms.toSeq
+      .map((k, v) => (v, k))
       .groupMap(_._1)(_._2)
       .map((k, v) => (k, v.toSet))

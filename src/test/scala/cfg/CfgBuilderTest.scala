@@ -1,4 +1,5 @@
-package hil
+package deadlockFinder
+package cfg
 
 import org.scalatest.funsuite.AnyFunSuite
 import deadlockFinder.translation.HilToLil
@@ -7,9 +8,8 @@ import deadlockFinder.JavaParser
 import deadlockFinder.cfg.CfgGraph
 import deadlockFinder.common.PrettyPrint
 
-class ImmediateDominatorsTest extends AnyFunSuite:
+class CfgBuilderTest extends AnyFunSuite:
   test("example 1") {
-    
     val source = """
 public class Example1 {
     static void func1() {
