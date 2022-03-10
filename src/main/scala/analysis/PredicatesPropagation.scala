@@ -17,16 +17,20 @@ object PredicatesPropagation:
       .flatMap { block => propagateFromBlock(block, usesAndDefs, dominators) }
       .groupMapReduce(_._1)(_._2.toSet)((s1, s2) => s1.union(s2))
 
+  /** Find predicates from asserts in the current block and propagate them
+   *  to dominated blocks. */
   def propagateFromBlock(
       block: Block,
       usesAndDefs: UsesAndDefs,
       dominators: Dominators
   ): List[(String, List[ProcessPredicate])] =
     val predicates = extractPredicates(block, usesAndDefs)
-    val dominated = dominators.getDominatedNodes(block.label)
-    val head = (block.label, predicates)
-    val tail = dominated.map(other => (other, predicates)).toList
-    head :: tail
+    if predicates.isEmpty then List()
+    else
+      val dominated = dominators.getDominatedNodes(block.label)
+      val head = (block.label, predicates)
+      val tail = dominated.map(other => (other, predicates)).toList
+      head :: tail
 
   def extractPredicates(
       block: Block,
@@ -36,6 +40,7 @@ object PredicatesPropagation:
       .filter(_.isInstanceOf[Assert])
       .flatMap(a => evaluate(a.asInstanceOf[Assert].expr, usesAndDefs))
 
+  /** Evaluate an expression and try to get predicates from it. */
   def evaluate(expr: Expr, usesAndDefs: UsesAndDefs): Option[ProcessPredicate] =
     expr match
       case UnaryExpr(UnaryOp.Not, v: SsaVariable, _) =>
