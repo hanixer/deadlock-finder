@@ -8,14 +8,14 @@ import lil.{Assert, Block, FuncDecl, SsaVariable}
 import cfg.{CfgGraph, Dominators}
 
 object PredicatesPropagation:
-  def propagate(func: FuncDecl): Map[String, Set[ProcessPredicate]] =
+  def propagate(func: FuncDecl): Map[String, ProcessRank] =
     val usesAndDefs = UsesAndDefs(func)
     val cfg = CfgGraph(func)
     val dominators = Dominators(cfg)
 
     func.body
       .flatMap { block => propagateFromBlock(block, usesAndDefs, dominators) }
-      .groupMapReduce(_._1)(_._2.toSet)((s1, s2) => s1.union(s2))
+      .toMap
 
   /** Find predicates from asserts in the current block and propagate them
    *  to dominated blocks. */
@@ -23,32 +23,43 @@ object PredicatesPropagation:
       block: Block,
       usesAndDefs: UsesAndDefs,
       dominators: Dominators
-  ): List[(String, List[ProcessPredicate])] =
-    val predicates = extractPredicates(block, usesAndDefs)
-    if predicates.isEmpty then List()
-    else
-      val dominated = dominators.getDominatedNodes(block.label)
-      val head = (block.label, predicates)
-      val tail = dominated.map(other => (other, predicates)).toList
-      head :: tail
+  ): List[(String, ProcessRank)] = 
+    extractPredicate(block, usesAndDefs) match
+      case None => List()
+      case Some(predicate) =>
+        val dominated = dominators.getDominatedNodes(block.label)
+        val head = (block.label, predicate)
+        val tail = dominated.map(other => (other, predicate)).toList
+        head :: tail
 
-  def extractPredicates(
+  def extractPredicate(
       block: Block,
       usesAndDefs: UsesAndDefs
-  ): List[ProcessPredicate] =
-    block.stmts
+  ): Option[ProcessRank] =
+    val evaluatedAsserts = block.stmts
       .filter(_.isInstanceOf[Assert])
       .flatMap(a => evaluate(a.asInstanceOf[Assert].expr, usesAndDefs))
+    
+    // First, try to find concrete rank.
+    // Second, try to find any rank.
+    val concrete = evaluatedAsserts.find(rank => rank.isInstanceOf[ProcessRank.Concrete])
+    
+    if concrete.isDefined then
+      concrete
+    else
+      evaluatedAsserts.find(rank => rank match
+        case ProcessRank.AnyRank => true
+        case _ => false)
 
   /** Evaluate an expression and try to get predicates from it. */
-  def evaluate(expr: Expr, usesAndDefs: UsesAndDefs): Option[ProcessPredicate] =
+  def evaluate(expr: Expr, usesAndDefs: UsesAndDefs): Option[ProcessRank] =
     expr match
       case UnaryExpr(UnaryOp.Not, v: SsaVariable, _) =>
         usesAndDefs
           .getDefiningExpr(v)
           .flatMap { defExpr =>
             evaluate(defExpr, usesAndDefs)
-              .map { predicate => predicate.copy(equal = !predicate.equal) }
+              .map { _ => ProcessRank.AnyRank }
           }
 
       case v: AbstractVar =>
@@ -56,10 +67,12 @@ object PredicatesPropagation:
           .getDefiningExpr(v)
           .flatMap(evaluate(_, usesAndDefs))
 
-      case BinaryExpr(BinaryOp.Equals, lhs, n: IntLiteral, _) =>
-        if isRankCall(lhs, usesAndDefs) then
-          Some(ProcessPredicate(true, n.n))
-        else None
+      // So far, we handle only literals, without using constant propagation.
+      case BinaryExpr(BinaryOp.Equals, lhs, n: IntLiteral, _) if isRankCall(lhs, usesAndDefs) =>
+        Some(ProcessRank.Concrete(n.n))
+
+      case BinaryExpr(BinaryOp.Equals, lhs, _, _) if isRankCall(lhs, usesAndDefs) =>
+        Some(ProcessRank.AnyRank)
 
       case _ => None
 

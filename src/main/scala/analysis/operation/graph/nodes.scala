@@ -1,7 +1,7 @@
 package deadlockFinder
 package analysis.operation.graph
 
-import analysis.ProcessPredicate
+import analysis.ProcessRank
 
 trait Node
 
