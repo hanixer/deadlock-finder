@@ -14,4 +14,7 @@ libraryDependencies += "org.typelevel" %% "paiges-core" % "0.4.2"
 // https://mvnrepository.com/artifact/org.scalatest/scalatest
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9" % Test
 
+// https://mvnrepository.com/artifact/org.jgrapht/jgrapht-core
+libraryDependencies += "org.jgrapht" % "jgrapht-core" % "1.5.1"
+
 Compile / run / mainClass := Some("deadlockFinder.Main")
