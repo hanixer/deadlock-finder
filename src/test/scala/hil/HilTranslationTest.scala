@@ -10,9 +10,9 @@ import java.nio.file.{Files, Path}
 class HilTranslationTest extends AnyFunSuite {
   def toHil(path: Path): String =
     PrettyPrint(SourceToHil(JavaParser.parseFile(path)))
-
-  test("All files") {
-    for f <- FileHelper.getJavaFiles("test/hil/") do
+  val javaFiles = FileHelper.getJavaFiles("test/hil/")
+  for f <- javaFiles do
+    test(f) {
       FileHelper.runForFile(f, toHil)
-  }
+    }
 }

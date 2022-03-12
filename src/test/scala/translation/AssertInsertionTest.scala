@@ -16,36 +16,28 @@ public class Example2 {
         int rank = mpi.MPI.COMM_WORLD.Rank();
         int x = 6;
         if (rank == 0) {
-            x++;
+            x = 100;
         } else if (rank == 1) {
-            x--;
+            x = 200;
         }
     }
 }
 """
-    val expected = """func Example1.func1(): void {
+    val expected = """func Example2.func1(): void {
+  var rank: int = mpi.Comm.Rank(mpi.MPI.COMM_WORLD)
   var x: int = 6
-  var y: int = 3
-  loop {
-    var t~1: boolean = x<100
-    var t~2: boolean = !t~1
+  var t~1: boolean = rank==0
+  if (t~1) {
+    assert t~1
+    x = 100
+  } else {
+    assert !t~1
+    var t~2: boolean = rank==1
     if (t~2) {
       assert t~2
-      break
-    } else assert !t~2
-    x = x+1
-    var t~3: boolean = y==50
-    if (t~3) {
-      assert t~3
-      break
-    } else assert !t~3
-    var t~4: boolean = y==100
-    if (t~4) {
-      assert t~4
-      y = 10
+      x = 200
     } else {
-      assert !t~4
-      y = 20
+      assert !t~2
     }
   }
 }"""
@@ -82,13 +74,17 @@ public class Example1 {
     if (t~2) {
       assert t~2
       break
-    } else assert !t~2
+    } else {
+      assert !t~2
+    }
     x = x+1
     var t~3: boolean = y==50
     if (t~3) {
       assert t~3
       break
-    } else assert !t~3
+    } else {
+      assert !t~3
+    }
     var t~4: boolean = y==100
     if (t~4) {
       assert t~4

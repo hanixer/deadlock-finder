@@ -6,7 +6,9 @@ func showcase.Example5.func1(a: int, b: int): void {
     var t~3: int = showcase.Example5.abs(c)
     var t~4: boolean = t~2<t~3
     var t~5: boolean = !t~4
-    if (t~5) break
+    if (t~5) {
+      break
+    }
     c = c-a
     b = b*1
   }
@@ -16,7 +18,9 @@ func showcase.Example5.func1(a: int, b: int): void {
     var t~7: int = showcase.Example5.abs(c)
     var t~8: boolean = t~6<t~7
     var t~9: boolean = !t~8
-    if (t~9) break
+    if (t~9) {
+      break
+    }
     c = c-a
   }
 }

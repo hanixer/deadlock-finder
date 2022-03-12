@@ -3,7 +3,9 @@ func showcase.Example7.func1(a: int, b: int): void {
   loop {
     var t~1: boolean = a<b
     var t~2: boolean = !t~1
-    if (t~2) break
+    if (t~2) {
+      break
+    }
     var t~3: boolean = a==2
     if (t~3) {
       continue

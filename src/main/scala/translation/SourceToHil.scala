@@ -221,7 +221,9 @@ class Visitor extends ASTVisitor:
     val condNot = UnaryExpr(UnaryOp.Not, cond, condLoc)
     val condVar =
       Variable(addTempVar(BooleanType, condLoc, Some(condNot)), condLoc)
-    addStmt(IfThenElse(condVar, Break(condLoc), None, condLoc))
+    val breakBlock = Block(List(Break(condLoc)), condLoc)
+    val ifThenElse = IfThenElse(condVar, breakBlock, None, condLoc)
+    addStmt(ifThenElse)
 
     // Body
     val bodyStmts = translateBody(node.getBody)
