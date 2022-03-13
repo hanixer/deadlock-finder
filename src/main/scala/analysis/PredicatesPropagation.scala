@@ -7,7 +7,10 @@ import lil.{Assert, Block, FuncDecl, SsaVariable}
 
 import cfg.{CfgGraph, Dominators}
 
+/** Propagation information about process rank through basic blocks */
 object PredicatesPropagation:
+  /** Returns a map from block name to process rank.
+   * For some block there may be no entry. */
   def propagate(func: FuncDecl): Map[String, ProcessRank] =
     val usesAndDefs = UsesAndDefs(func)
     val cfg = CfgGraph(func)

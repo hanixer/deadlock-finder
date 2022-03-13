@@ -2,14 +2,21 @@ package deadlockFinder
 package analysis
 
 import org.scalatest.funsuite.AnyFunSuite
-import deadlockFinder.translation.{HilToLil, LilToSsa, SourceToHil, AssertInsertion}
+import deadlockFinder.translation.{AssertInsertion, HilToLil, LilToSsa, SourceToHil}
 import deadlockFinder.cfg.CfgGraph
 import deadlockFinder.common.PrettyPrint
 import deadlockFinder.JavaParser
 import deadlockFinder.analysis.{UsesAndDefs, VarInfo}
 import deadlockFinder.hil.IntLiteral
+import deadlockFinder.lil.FuncDecl
 
 class PredicatesPropagationTest extends AnyFunSuite:
+  private def printCodeAndResult(func: FuncDecl, result: Map[String, ProcessRank]): Unit = {
+    println(PrettyPrint(func))
+    println("==============")
+    for ((k, v) <- result) do
+      println(s"$k: $v")
+  }
 
   test("example 2") {
     val source = """
@@ -18,9 +25,9 @@ public class Example2 {
         int rank = mpi.MPI.COMM_WORLD.Rank();
         int x = 6;
         if (rank == 0) {
-            x++;
+            x = 100;
         } else if (rank == 1) {
-            x--;
+            x = 200;
         }
     }
 }
@@ -29,13 +36,14 @@ public class Example2 {
     val lil = HilToLil(hil)
     val ssa = LilToSsa(lil)
     val func = ssa.funcs.head
-    println(PrettyPrint(func))
-    println("==============")
     val result = PredicatesPropagation.propagate(func)
-    for ((k, v) <- result) do
-      println(s"$k: $v")
-    assert(1 === 1)
+    printCodeAndResult(func, result)
+    assert(result("bb2") === ProcessRank.Concrete(0))
+    assert(result("bb4") === ProcessRank.Concrete(1))
+    assert(result("bb3") === ProcessRank.AnyRank)
+    assert(result("bb5") === ProcessRank.AnyRank)
   }
+
   test("example 1") {
     val source = """
 public class Example1 {
@@ -59,10 +67,10 @@ public class Example1 {
     val lil = HilToLil(hil)
     val ssa = LilToSsa(lil)
     val func = ssa.funcs.head
-    println(PrettyPrint(func))
-    println("==============")
     val result = PredicatesPropagation.propagate(func)
-    for ((k, v) <- result) do
-      println(s"$k: $v")
-    assert(1 === 1)
+    printCodeAndResult(func, result)
+    assert(result("bb2") === ProcessRank.Concrete(0))
+    assert(result("bb4") === ProcessRank.Concrete(1))
+    assert(result("bb3") === ProcessRank.AnyRank)
+    assert(result("bb5") === ProcessRank.AnyRank)
   }
