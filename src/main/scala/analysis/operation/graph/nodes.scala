@@ -5,8 +5,11 @@ import analysis.ProcessRank
 
 trait Node
 
-class Intermediate extends Node
+class IntermediateNode(val label: String) extends Node:
+  override def toString: String = s"Intermediate $label"
 
-class SendNode(val sender: ProcessRank, val receiver: Int) extends Node
+class SendNode(val sender: ProcessRank, val receiver: Int) extends Node:
+  override def toString: String = s"Send $sender => $receiver"
 
-class RecvNode(val sender: ProcessRank, val receiver: Int) extends Node
+class RecvNode(val sender: ProcessRank, val receiver: Int) extends Node:
+  override def toString: String = s"Recv $sender <= $receiver"

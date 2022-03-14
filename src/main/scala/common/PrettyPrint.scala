@@ -3,6 +3,8 @@ package common
 
 import org.typelevel.paiges.Doc
 import cfg.CfgGraph
+
+import deadlockFinder.analysis.operation.graph.OperationGraph
 import deadlockFinder.lil.FuncDecl
 import deadlockFinder.hil.Variable
 import deadlockFinder.hil.AbstractVar
@@ -15,11 +17,13 @@ object PrettyPrint:
     "digraph G {\n" + cfg.allNodes.flatMap(n => cfg.successors(n).map(s => s"$n -> $s")).mkString("\n") + "\n}"
 
   def funcToDot(func: FuncDecl, cfg: CfgGraph): String =
-    val blocks = func.body.map(b => 
-      val elems = b.label :: b.stmts.map(PrettyPrint.apply).appended(PrettyPrint(b.transfer))      
-      s"${b.label} [label=\"${elems.mkString("\n")}\"]").mkString("\n") + "\n"
-    "digraph G {\n" + blocks + cfg.allNodes.flatMap(n => cfg.successors(n).map(s => s"$n -> $s")).mkString("\n") + "\n}"    
-  
+    val blocks = func.body
+      .map { b =>
+        val elems = b.label :: b.stmts.map(PrettyPrint.apply).appended(PrettyPrint(b.transfer))
+        s"${b.label} [label=\"${elems.mkString("\n")}\"]"
+      }.mkString("\n") + "\n"
+    "digraph G {\n" + blocks + cfg.allNodes.flatMap(n => cfg.successors(n).map(s => s"$n -> $s")).mkString("\n") + "\n}"
+
   def separateComma(ds: List[Doc]): Doc =
     Doc.fill(Doc.text(", "), ds)
 
@@ -29,6 +33,20 @@ object PrettyPrint:
   def inParensAndComma(ds: List[Doc]): Doc =
     inParens(separateComma(ds))
 
-  def argsOrEmpty(vars: List[AbstractVar]): Doc =    
+  def argsOrEmpty(vars: List[AbstractVar]): Doc =
     if vars.isEmpty then Doc.empty
     else PrettyPrint.inParensAndComma(vars.map(_.prettyPrint))
+
+  def operationGraphToDot(operationGraph: OperationGraph): String =
+    val nodeToIndex = operationGraph.nodes.zipWithIndex.toMap
+    val labels = nodeToIndex.toList.map { (n, i) => s"$i [label=\"$n\"]" }
+    val edges = operationGraph.edges.map { (n1, n2) =>
+      val i1 = nodeToIndex(n1)
+      val i2 = nodeToIndex(n2)
+      s"$i1 -> $i2"
+    }
+    "digraph G {\n" +
+      labels.mkString("\n") + "\n" +
+      edges.mkString("\n") + "\n" +
+      "}"
+
