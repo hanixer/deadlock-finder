@@ -18,29 +18,47 @@ class OperationGraphBuilder(func: FuncDecl):
   def build(): OperationGraph =
     val root = new IntermediateNode(cfg.entry)
     val entry = QueueEntry(cfg.entry, root, None)
-    val edges = loop(Queue(entry), Map(), List())
-    val initialMap = edges.flatMap(e => List(e._1, e._2)).map((_, List())).toMap 
+    val edges = loop(Queue(entry), Map(), Set(), List()).toSet.toList
+    val initialMap = edges.flatMap(e => List(e._1, e._2)).map((_, List())).toMap
     val adjMap = initialMap ++ edges.groupMap(_._1)(_._2)
-    
+
     new OperationGraph(root, adjMap)
 
   @tailrec
-  private def loop(queue: Queue[QueueEntry], intermediates: Map[String, IntermediateNode], acc: Edges): Edges =
+  private def loop(
+      queue: Queue[QueueEntry],
+      intermediates: Map[String, IntermediateNode],
+      seen: Set[String],
+      acc: Edges
+  ): Edges =
     queue.dequeueOption match
       case Some((entry, rest)) =>
         val currRank = processRanks.get(entry.label)
+        val isRankChanged = entry.rank.isDefined && entry.rank != currRank
 
         // Create new intermediate node if needed.
         val (pred1, intermediates1) =
-          if entry.rank.isDefined && entry.rank != currRank then
-            val node = new IntermediateNode(entry.label)
-            (node, intermediates.updated(entry.label, node))
+          if isRankChanged then
+            if !intermediates.contains(entry.label) then
+              val node = new IntermediateNode(entry.label)
+              (node, intermediates.updated(entry.label, node))
+            else (intermediates(entry.label), intermediates)
           else (entry.node, intermediates)
 
+        val edgesPrev =
+          if isRankChanged then List((entry.node, pred1))
+          else List()
+
         val block = func.labelToBlock(entry.label)
-        val (edges, pred2) = handleStmts(block.stmts, pred1, entry.label)
+
+        // Handle statements if block was not processed.
+        val (edgesStmts, pred2) =
+          if !seen(entry.label) then handleStmts(block.stmts, pred1, entry.label)
+          else (List(), pred1)
+
         val next = nextLabels(block.transfer).map { QueueEntry(_, pred2, currRank) }
-        loop(rest.enqueueAll(next), intermediates1, acc.appendedAll(edges))
+
+        loop(rest ++ next, intermediates1, seen + entry.label, edgesPrev ++ edgesStmts ++ acc)
 
       case None => acc
 
@@ -83,7 +101,7 @@ class OperationGraphBuilder(func: FuncDecl):
             case _ => None
         else None
       case _ => None
-  
+
   def nextLabels(t: Transfer): List[String] = t match
     case j: Jump      => List(j.label)
     case cj: CondJump => List(cj.thenLabel, cj.elseLabel)
