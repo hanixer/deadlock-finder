@@ -14,14 +14,14 @@ class CfgGraph(
 ):
 
   /** Returns a list of predecessors of the given node. */
-  def getPreds(node: String): List[String] =
+  def predecessors(node: String): List[String] =
     preds(node)
 
   /** Returns a list of successors of the given node. */
-  def getSuccs(node: String): List[String] =
+  def successors(node: String): List[String] =
     succs(node)
 
-  def getAllNodes: List[String] = preds.keys.toList
+  def allNodes: List[String] = preds.keys.toList
 
 object CfgGraph:
   type BuilderMap = mutable.Map[String, mutable.ListBuffer[String]]

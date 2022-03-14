@@ -38,7 +38,7 @@ object LilToSsa:
     val varToPhiBlocks = varToDefs.map((v, d) => (v, findPhiForVar(v, d, doms)))
     val resolvedVars = resolveVars(func)
     val pairs =
-      cfg.getAllNodes.map(b =>
+      cfg.allNodes.map(b =>
         val vars = varToPhiBlocks
           .filter((v, phiBlocks) => phiBlocks(b))
           .map((v, _) => resolvedVars(v))

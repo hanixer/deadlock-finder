@@ -48,9 +48,9 @@ object Dominators:
     val nodeToInd = rposta.zipWithIndex.toMap
     val doms = Array.fill(rposta.length)(Undefined)
     doms(0) = 0 // This is the entry node.
-    val preds = cfg.getAllNodes
+    val preds = cfg.allNodes
       .map(n =>
-        val preds = cfg.getPreds(n).map(nodeToInd)
+        val preds = cfg.predecessors(n).map(nodeToInd)
         (nodeToInd(n), preds)
       )
       .toMap
@@ -104,10 +104,10 @@ object Dominators:
       doms: Map[String, String]
   ): DominanceFrontiers =
     val df = mutable.Map[String, mutable.Set[String]]()
-    for node <- cfg.getAllNodes do df(node) = mutable.Set()
+    for node <- cfg.allNodes do df(node) = mutable.Set()
 
     val doms = findImmediateDominators(cfg)
-    val joins = cfg.getAllNodes.filter(n => cfg.getPreds(n).length > 1)
+    val joins = cfg.allNodes.filter(n => cfg.predecessors(n).length > 1)
 
     @tailrec
     def walkUpDoms(join: String, idom: String, curr: String): Unit =
@@ -116,7 +116,7 @@ object Dominators:
         walkUpDoms(join, idom, doms(curr))
 
     for join <- joins do
-      for pred <- cfg.getPreds(join) do walkUpDoms(join, doms(join), pred)
+      for pred <- cfg.predecessors(join) do walkUpDoms(join, doms(join), pred)
 
     df.map((k, v) => (k, v.toSet)).toMap
 
@@ -125,7 +125,7 @@ object Dominators:
     val visited = mutable.Set[String]()
     def dfs(curr: String): Unit =
       if visited.add(curr) then
-        for succ <- cfg.getSuccs(curr) do dfs(succ)
+        for succ <- cfg.successors(curr) do dfs(succ)
         list.addOne(curr)
     dfs(cfg.entry)
     list.toList.reverse
