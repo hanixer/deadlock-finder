@@ -34,7 +34,7 @@ class OperationGraphBuilder(func: FuncDecl):
     queue.dequeueOption match
       case Some((entry, rest)) =>
         val currRank = processRanks.get(entry.label)
-        val isRankChanged = entry.rank.isDefined && entry.rank != currRank
+        val isRankChanged = entry.rank.isDefined && entry.rank != currRank && entry.rank.get.isInstanceOf[ProcessRank.Concrete]
 
         // Create new intermediate node if needed.
         val (pred1, intermediates1) =
