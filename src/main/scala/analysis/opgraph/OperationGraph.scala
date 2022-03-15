@@ -1,5 +1,5 @@
 package deadlockFinder
-package analysis.operation.graph
+package analysis.opgraph
 
 class OperationGraph(val root: Node, map: Map[Node, List[Node]]):
     

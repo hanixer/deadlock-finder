@@ -2,7 +2,8 @@ package deadlockFinder
 package analysis.pnet
 
 import analysis.ProcessRank
-import analysis.operation.graph.{CallNode, RecvNode, SendNode}
+
+import deadlockFinder.analysis.opgraph.{CallNode, RecvNode, SendNode}
 
 case class GroupInfo(sender: ProcessRank, receiver: ProcessRank)
 

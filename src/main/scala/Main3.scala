@@ -1,11 +1,11 @@
 package deadlockFinder
 
-import analysis.operation.graph.OperationGraphBuilder
 import analysis.pnet.PetriNetBuilder
 import cfg.CfgGraph
 import common.PrettyPrint
 import translation.Util
 
+import deadlockFinder.analysis.opgraph.OperationGraphBuilder
 import org.jgrapht.graph.{DefaultDirectedGraph, DefaultEdge}
 
 import java.nio.file.{Files, Path}

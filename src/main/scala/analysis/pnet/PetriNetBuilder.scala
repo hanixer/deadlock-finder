@@ -1,19 +1,19 @@
 package deadlockFinder
 package analysis.pnet
 
-import analysis.operation.graph.{CallNode, IntermediateNode, OperationGraph, SendNode, Node as OGNode}
+import analysis.opgraph.{CallNode, IntermediateNode, Node, OperationGraph}
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, ListBuffer, Queue, Set}
 
 class PetriNetBuilder(operationGraph: OperationGraph):
-  case class QueueEntry(from: OGNode, to: OGNode, transition: Transition):
-    def edge: (OGNode, OGNode) = (from, to)
+  case class QueueEntry(from: Node, to: Node, transition: Transition):
+    def edge: (Node, Node) = (from, to)
 
   private val edges = ListBuffer.empty[Edge]
-  private val queue = Queue.empty[(OGNode, Transition)]
+  private val queue = Queue.empty[(Node, Transition)]
   private val groups = HashMap.empty[GroupInfo, NodeGroup]
-  private val transitions = HashMap.empty[OGNode, Transition]
-  private val seen = Set.empty[OGNode]
+  private val transitions = HashMap.empty[Node, Transition]
+  private val seen = Set.empty[Node]
 
   def build(): PetriNet =
     val firstP = new Place
@@ -28,7 +28,7 @@ class PetriNetBuilder(operationGraph: OperationGraph):
 
     new PetriNet(firstP, edges.toList)
 
-  private def processEntry(ognode: OGNode, prevTran: Transition): Unit =
+  private def processEntry(ognode: Node, prevTran: Transition): Unit =
     if seen.add(ognode) then
       ognode match
         case curr: CallNode =>
@@ -65,7 +65,7 @@ class PetriNetBuilder(operationGraph: OperationGraph):
                   queue += ((next, prevTran))
             }
 
-  def getOrCreateTransition(node: OGNode): Transition =
+  def getOrCreateTransition(node: Node): Transition =
     transitions.get(node) match
       case Some(t) => t
       case None =>

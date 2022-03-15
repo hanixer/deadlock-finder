@@ -1,12 +1,12 @@
 package deadlockFinder
 package common
 
-import analysis.operation.graph.OperationGraph
 import analysis.pnet.{PetriNet, Place, Transition}
 import cfg.CfgGraph
 import hil.{AbstractVar, Variable}
 import lil.FuncDecl
 
+import deadlockFinder.analysis.opgraph.OperationGraph
 import org.typelevel.paiges.Doc
 
 object PrettyPrint:

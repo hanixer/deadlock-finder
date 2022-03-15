@@ -1,5 +1,5 @@
 package deadlockFinder
-package analysis.operation.graph
+package analysis.opgraph
 
 import analysis.ProcessRank
 

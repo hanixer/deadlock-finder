@@ -1,9 +1,10 @@
 package deadlockFinder
-package analysis.operation.graph
+package analysis.opgraph
 
 import org.scalatest.funsuite.AnyFunSuite
 import deadlockFinder.translation.{HilToLil, LilToSsa, SourceToHil, Util}
 import deadlockFinder.JavaParser
+import deadlockFinder.analysis.opgraph.IntermediateNode
 import deadlockFinder.analysis.{ConstantPropagation, VarInfo}
 import deadlockFinder.cfg.CfgGraph
 import deadlockFinder.common.PrettyPrint
