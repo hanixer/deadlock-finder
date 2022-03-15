@@ -23,7 +23,6 @@ class PetriNetBuilder(operationGraph: OperationGraph):
 
     while queue.nonEmpty do
       val (n, t) = queue.dequeue()
-      println(s"Process $n $t")
       processEntry(n, t)
 
     new PetriNet(firstP, edges.toList)

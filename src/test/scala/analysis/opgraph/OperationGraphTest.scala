@@ -27,12 +27,10 @@ class OperationGraphTest extends AnyFunSuite:
     val expected = List(
       (n1, n2),
       (n1, n3),
-      (n1, n7),
       (n2, n4),
       (n3, n4),
       (n4, n5),
       (n4, n6),
-      (n4, n7),
       (n5, n7),
       (n6, n7)
     )

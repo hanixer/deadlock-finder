@@ -18,5 +18,7 @@ object Main3:
     val petriNet = PetriNetBuilder(operationGraph)
     Files.writeString(Path.of("target/opgraph.dot"), PrettyPrint.operationGraphToDot(operationGraph))
     Files.writeString(Path.of("target/petrinet.dot"), PrettyPrint.petriNetToDot(petriNet))
+    Files.writeString(Path.of("target/cfg.dot"), PrettyPrint.funcToDot(lil.funcs.head, CfgGraph(lil.funcs.head)))
+    Files.writeString(Path.of("target/cfg.dot"), PrettyPrint.cfgToDot(CfgGraph(lil.funcs.head)))
 
 end Main3
