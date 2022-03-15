@@ -1,13 +1,13 @@
 package deadlockFinder
 package common
 
-import org.typelevel.paiges.Doc
+import analysis.operation.graph.OperationGraph
+import analysis.pnet.{PetriNet, Place, Transition}
 import cfg.CfgGraph
+import hil.{AbstractVar, Variable}
+import lil.FuncDecl
 
-import deadlockFinder.analysis.operation.graph.OperationGraph
-import deadlockFinder.lil.FuncDecl
-import deadlockFinder.hil.Variable
-import deadlockFinder.hil.AbstractVar
+import org.typelevel.paiges.Doc
 
 object PrettyPrint:
   def apply(node: AstNode): String =
@@ -21,7 +21,8 @@ object PrettyPrint:
       .map { b =>
         val elems = b.label :: b.stmts.map(PrettyPrint.apply).appended(PrettyPrint(b.transfer))
         s"${b.label} [label=\"${elems.mkString("\n")}\"]"
-      }.mkString("\n") + "\n"
+      }
+      .mkString("\n") + "\n"
     "digraph G {\n" + blocks + cfg.allNodes.flatMap(n => cfg.successors(n).map(s => s"$n -> $s")).mkString("\n") + "\n}"
 
   def separateComma(ds: List[Doc]): Doc =
@@ -50,3 +51,19 @@ object PrettyPrint:
       edges.mkString("\n") + "\n" +
       "}"
 
+  def petriNetToDot(petriNet: PetriNet): String =
+    val nodeToIndex = petriNet.nodes.zipWithIndex.toMap
+    val nodeDefs = nodeToIndex.toList.map { (n, i) =>
+      n match
+        case p: Place => s"$i [shape=circle]"
+        case t: Transition => s"$i [shape=box]"
+    }
+    val edges = petriNet.edges.map { e =>
+      val i1 = nodeToIndex(e.from)
+      val i2 = nodeToIndex(e.to)
+      s"$i1 -> $i2"
+    }
+    "digraph G {\n" +
+      nodeDefs.mkString("\n") + "\n" +
+      edges.mkString("\n") + "\n" +
+      "}"
