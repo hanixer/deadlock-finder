@@ -12,7 +12,7 @@ import java.nio.file.{Files, Path}
 
 object Main3:
   def main(args: Array[String]): Unit =
-    val path = "examples/parallel/MpiSendRecvDeadlock.java"
+    val path = "examples/parallel/MpiSendRecv2.java"
     val lil = Util.fileToSsa(path)
     val operationGraph = OperationGraphBuilder(lil.funcs.head)
     val petriNet = PetriNetBuilder(operationGraph)
