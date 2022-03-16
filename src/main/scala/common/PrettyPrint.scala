@@ -1,12 +1,12 @@
 package deadlockFinder
 package common
 
-import analysis.pnet.{PetriNet, Place, Transition}
+import analysis.opgraph.OperationGraph
+import analysis.pnet.{Node, PetriNet, Place, Transition}
 import cfg.CfgGraph
 import hil.{AbstractVar, Variable}
 import lil.FuncDecl
 
-import deadlockFinder.analysis.opgraph.OperationGraph
 import org.typelevel.paiges.Doc
 
 object PrettyPrint:
@@ -52,11 +52,12 @@ object PrettyPrint:
       "}"
 
   def petriNetToDot(petriNet: PetriNet): String =
+    val names = namePetriNetNodes(petriNet)
     val nodeToIndex = petriNet.nodes.zipWithIndex.toMap
     val nodeDefs = nodeToIndex.toList.map { (n, i) =>
       n match
-        case p: Place => s"$i [shape=circle]"
-        case t: Transition => s"$i [shape=box]"
+        case p: Place      => s"$i [label=${names(n)};shape=circle]"
+        case t: Transition => s"$i [label=${names(n)};shape=box]"
     }
     val edges = petriNet.edges.map { e =>
       val i1 = nodeToIndex(e.from)
@@ -67,3 +68,30 @@ object PrettyPrint:
       nodeDefs.mkString("\n") + "\n" +
       edges.mkString("\n") + "\n" +
       "}"
+
+  def namePetriNetNodes(petriNet: PetriNet): Map[Node, String] =
+    val trs = petriNet.transitions
+    val pls = petriNet.places
+    val trsMap: Map[Node, String] = trs.zipWithIndex.map((n, i) => (n, s"tr$i")).toMap
+    val plsMap = pls.zipWithIndex.map((n, i) => (n, s"pl$i")).toMap
+    trsMap ++ plsMap
+
+  def petriNetToTina(petriNet: PetriNet): String =
+    val map = namePetriNetNodes(petriNet)
+    val sorted = map.toList.sortBy { (n, s) =>
+      n match
+        case t: Transition => (-1, s)
+        case t: Place => (1, s)
+    }
+    val nodes = sorted.map { (n, s) =>
+      n match
+        case t: Transition =>
+          val preds = petriNet.predecessors(n).map(map).mkString(" ")
+          val succs = petriNet.successors(n).map(map).mkString(" ")
+          s"tr $s $preds -> $succs"
+        case p: Place =>
+          val mark = if n eq petriNet.root then 1 else 0
+          s"pl $s ($mark)"
+    }
+    "net mpi\n" +
+      nodes.mkString("\n")
