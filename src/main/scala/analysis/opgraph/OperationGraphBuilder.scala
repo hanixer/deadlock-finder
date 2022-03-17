@@ -46,7 +46,7 @@ class OperationGraphBuilder(func: FuncDecl):
 
     // Handle statements if block was not processed.
     val pred2 =
-      if !seen(entry.label) then handleStmts(block.stmts, pred1, entry.label)
+      if !seen(entry.label) then handleStmts(block.stmts, pred1, currRank)
       else pred1
 
     val next = nextLabels(block.transfer).map {
@@ -66,9 +66,9 @@ class OperationGraphBuilder(func: FuncDecl):
       else intermediates(entry.label)
     else entry.node
 
-  def handleStmts(stmts: List[Stmt], pred: Node, label: String): Node =
+  def handleStmts(stmts: List[Stmt], pred: Node, processRank: Option[ProcessRank]): Node =
     stmts.foldLeft(pred) { (pred, stmt) =>
-      tryMakeNodeFromStmt(stmt, label) match
+      tryMakeNodeFromStmt(stmt, processRank) match
         case Some(node) =>
           edges += ((pred, node))
           node
@@ -76,14 +76,14 @@ class OperationGraphBuilder(func: FuncDecl):
           pred
     }
 
-  def tryMakeNodeFromStmt(stmt: Stmt, label: String): Option[Node] = stmt match
-    case c: CallStmt                         => tryMakeNodeFromCall(c.callExpr, label)
-    case VarDecl(_, _, Some(c: CallExpr), _) => tryMakeNodeFromCall(c, label)
-    case Assignment(_, c: CallExpr, _)       => tryMakeNodeFromCall(c, label)
+  def tryMakeNodeFromStmt(stmt: Stmt, processRank: Option[ProcessRank]): Option[Node] = stmt match
+    case c: CallStmt                         => tryMakeNodeFromCall(c.callExpr, processRank)
+    case VarDecl(_, _, Some(c: CallExpr), _) => tryMakeNodeFromCall(c, processRank)
+    case Assignment(_, c: CallExpr, _)       => tryMakeNodeFromCall(c, processRank)
     case _                                   => None
 
-  def tryMakeNodeFromCall(expr: CallExpr, label: String): Option[Node] =
-    processRanks.get(label) match
+  def tryMakeNodeFromCall(expr: CallExpr, processRank: Option[ProcessRank]): Option[Node] =
+    processRank match
       case Some(rank) =>
         expr.args.lift(5) match
           case Some(n: IntLiteral) =>
@@ -99,7 +99,5 @@ class OperationGraphBuilder(func: FuncDecl):
     case _            => List()
 
 object OperationGraphBuilder:
-  type Edges = List[(Node, Node)]
-
   def apply(func: FuncDecl): OperationGraph =
     new OperationGraphBuilder(func).build()
