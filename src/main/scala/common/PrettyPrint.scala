@@ -59,9 +59,9 @@ object PrettyPrint:
         case p: Place      => s"$i [label=${names(n)};shape=circle]"
         case t: Transition => s"$i [label=${names(n)};shape=box]"
     }
-    val edges = petriNet.edges.map { e =>
-      val i1 = nodeToIndex(e.from)
-      val i2 = nodeToIndex(e.to)
+    val edges = petriNet.edges.map { (n, m) =>
+      val i1 = nodeToIndex(n)
+      val i2 = nodeToIndex(m)
       s"$i1 -> $i2"
     }
     "digraph G {\n" +

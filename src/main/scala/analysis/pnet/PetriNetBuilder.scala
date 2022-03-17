@@ -1,24 +1,23 @@
 package deadlockFinder
 package analysis.pnet
 
-import analysis.opgraph.{CallNode, IntermediateNode, Node, OperationGraph}
+import analysis.opgraph.{CallNode, IntermediateNode, Node => OGNode, OperationGraph}
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, ListBuffer, Queue, Set}
 
 class PetriNetBuilder(operationGraph: OperationGraph):
-  case class QueueEntry(from: Node, to: Node, transition: Transition):
-    def edge: (Node, Node) = (from, to)
+  case class QueueEntry(from: Node, to: Node, transition: Transition)
 
   private val edges = ListBuffer.empty[Edge]
-  private val queue = Queue.empty[(Node, Transition)]
+  private val queue = Queue.empty[(OGNode, Transition)]
   private val groups = HashMap.empty[GroupInfo, NodeGroup]
-  private val transitions = HashMap.empty[Node, Transition]
-  private val seen = Set.empty[Node]
+  private val transitions = HashMap.empty[OGNode, Transition]
+  private val seen = Set.empty[OGNode]
 
   def build(): PetriNet =
     val firstP = new Place
     val firstT = new Transition
-    edges += PTEdge(firstP, firstT)
+    addEdge(firstP, firstT)
     queue += ((operationGraph.root, firstT))
 
     while queue.nonEmpty do
@@ -27,7 +26,7 @@ class PetriNetBuilder(operationGraph: OperationGraph):
 
     new PetriNet(firstP, edges.toList)
 
-  private def processEntry(ognode: Node, prevTran: Transition): Unit =
+  private def processEntry(ognode: OGNode, prevTran: Transition): Unit =
     if seen.add(ognode) then
       ognode match
         case curr: CallNode =>
@@ -36,8 +35,8 @@ class PetriNetBuilder(operationGraph: OperationGraph):
           operationGraph.successors(curr).foreach { next =>
             val nextTran = getOrCreateTransition(next)
 
-            edges += TPEdge(prevTran, p)
-            edges += PTEdge(p, nextTran)
+            addEdge(prevTran, p)
+            addEdge(p, nextTran)
             edges ++= group.connect(curr, prevTran, nextTran)
 
             queue += ((next, nextTran))
@@ -48,15 +47,15 @@ class PetriNetBuilder(operationGraph: OperationGraph):
           val successors = operationGraph.successors(curr)
           if successors.isEmpty then
             val lastP = new Place
-            edges += TPEdge(prevTran, lastP)
+            addEdge(prevTran, lastP)
           else
             successors.foreach { next =>
               next match
                 case nexti: IntermediateNode =>
                   val nextTran = getOrCreateTransition(next)
 
-                  edges += TPEdge(prevTran, p)
-                  edges += PTEdge(p, nextTran)
+                  addEdge(prevTran, p)
+                  addEdge(p, nextTran)
 
                   queue += ((next, nextTran))
 
@@ -64,7 +63,7 @@ class PetriNetBuilder(operationGraph: OperationGraph):
                   queue += ((next, prevTran))
             }
 
-  def getOrCreateTransition(node: Node): Transition =
+  def getOrCreateTransition(node: OGNode): Transition =
     transitions.get(node) match
       case Some(t) => t
       case None =>
@@ -79,8 +78,11 @@ class PetriNetBuilder(operationGraph: OperationGraph):
       case None =>
         val group = NodeGroup(info)
         groups.put(info, group)
-        edges ++= group.innerEdges
+        group.innerEdges.foreach(addEdge)
         group
+
+  def addEdge(from: Node, to: Node): Unit =
+    edges += ((from, to))
 
 object PetriNetBuilder:
   def apply(operationGraph: OperationGraph): PetriNet = new PetriNetBuilder(operationGraph).build()

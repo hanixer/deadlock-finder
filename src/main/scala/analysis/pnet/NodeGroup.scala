@@ -23,14 +23,14 @@ class NodeGroup(val info: GroupInfo):
   val transition = new Transition
 
   def innerEdges: List[Edge] = List(
-    PTEdge(sendEnter, transition),
-    PTEdge(recvEnter, transition),
-    TPEdge(transition, sendExit),
-    TPEdge(transition, recvExit)
+    (sendEnter, transition),
+    (recvEnter, transition),
+    (transition, sendExit),
+    (transition, recvExit)
   )
 
   def connect(node: CallNode, prevTran: Transition, nextTran: Transition): List[Edge] = node match
     case n: SendNode =>
-      List(TPEdge(prevTran, sendEnter), PTEdge(sendExit, nextTran))
+      List((prevTran, sendEnter), (sendExit, nextTran))
     case n: RecvNode =>
-      List(TPEdge(prevTran, recvEnter), PTEdge(recvExit, nextTran))
+      List((prevTran, recvEnter), (recvExit, nextTran))

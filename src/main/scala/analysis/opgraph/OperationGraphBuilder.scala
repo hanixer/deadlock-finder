@@ -12,7 +12,6 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 class OperationGraphBuilder(func: FuncDecl):
-  type Edges = List[(Node, Node)]
   case class QueueEntry(label: String, node: Node, rank: Option[ProcessRank])
 
   val cfg: CfgGraph = CfgGraph(func)
