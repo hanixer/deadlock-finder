@@ -25,8 +25,7 @@ class OperationGraphBuilder(func: FuncDecl):
     val root = new IntermediateNode(cfg.entry)
     queue += QueueEntry(cfg.entry, root, None)
 
-    while queue.nonEmpty do
-      processEntry(queue.dequeue())
+    while queue.nonEmpty do processEntry(queue.dequeue())
 
     val initialMap = edges.flatMap(e => List(e._1, e._2)).map((_, List())).toMap
     val adjMap = initialMap ++ edges.toList.groupMap(_._1)(_._2)
@@ -35,13 +34,13 @@ class OperationGraphBuilder(func: FuncDecl):
 
   private def processEntry(entry: QueueEntry) =
     val currRank = processRanks.get(entry.label)
-    val isRankChanged = entry.rank.isDefined && entry.rank != currRank && entry.rank.get.isInstanceOf[ProcessRank.Concrete]
+    val isRankChanged =
+      entry.rank.isDefined && entry.rank != currRank && entry.rank.get.isInstanceOf[ProcessRank.Concrete]
 
     // Create new intermediate node if needed.
     val pred1 = createIntermediateIfNeeded(entry, isRankChanged)
 
-    if isRankChanged then
-      edges += ((entry.node, pred1))
+    if isRankChanged then edges += ((entry.node, pred1))
 
     val block = func.labelToBlock(entry.label)
 
@@ -54,8 +53,7 @@ class OperationGraphBuilder(func: FuncDecl):
       QueueEntry(_, pred2, currRank)
     }
 
-    if !seen(entry.label) then
-      queue ++= next
+    if !seen(entry.label) then queue ++= next
 
     seen += entry.label
 
@@ -65,23 +63,18 @@ class OperationGraphBuilder(func: FuncDecl):
         val node = new IntermediateNode(entry.label)
         intermediates.put(entry.label, node)
         node
-      else
-        intermediates(entry.label)
+      else intermediates(entry.label)
     else entry.node
 
   def handleStmts(stmts: List[Stmt], pred: Node, label: String): Node =
-    @tailrec
-    def loop(stmts: List[Stmt], pred: Node): Node =
-      if stmts.isEmpty then pred
-      else
-        tryMakeNodeFromStmt(stmts.head, label) match
-          case Some(node) =>
-            edges += ((pred, node))
-            loop(stmts.tail, node)
-          case _ =>
-            loop(stmts.tail, pred)
-
-    loop(stmts, pred)
+    stmts.foldLeft(pred) { (pred, stmt) =>
+      tryMakeNodeFromStmt(stmt, label) match
+        case Some(node) =>
+          edges += ((pred, node))
+          node
+        case _ =>
+          pred
+    }
 
   def tryMakeNodeFromStmt(stmt: Stmt, label: String): Option[Node] = stmt match
     case c: CallStmt                         => tryMakeNodeFromCall(c.callExpr, label)
@@ -90,25 +83,15 @@ class OperationGraphBuilder(func: FuncDecl):
     case _                                   => None
 
   def tryMakeNodeFromCall(expr: CallExpr, label: String): Option[Node] =
-    // Try to get sender rank associated with block.
     processRanks.get(label) match
       case Some(rank) =>
-        // Check function name.
-        if expr.name == "mpi.Comm.Send" then
-          // Try to get int argument.
-          expr.args.lift(5) match
-            case Some(n: IntLiteral) =>
-              Some(new SendNode(rank, n.n))
-            case _ => None
-        // TODO: refactor
-        else if expr.name == "mpi.Comm.Recv" then
-          // Try to get int argument.
-          expr.args.lift(5) match
-            case Some(n: IntLiteral) =>
-              Some(new RecvNode(rank, n.n))
-            case _ => None
-        else None
-      case _ => None
+        expr.args.lift(5) match
+          case Some(n: IntLiteral) =>
+            if expr.name == "mpi.Comm.Send" then Some(new SendNode(rank, n.n))
+            else if expr.name == "mpi.Comm.Recv" then Some(new RecvNode(rank, n.n))
+            else None
+          case _ => None
+      case None => None
 
   def nextLabels(t: Transfer): List[String] = t match
     case j: Jump      => List(j.label)
