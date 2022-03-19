@@ -12,14 +12,14 @@ import java.nio.file.{Files, Path}
 
 object Main3:
   def main(args: Array[String]): Unit =
-    val path = "examples/parallel/MpiSendRecv3.java"
+    val path = "examples/parallel/MpiSendRecvConditions2.java"
     val lil = Util.fileToSsa(path)
-    val operationGraph = OperationGraphBuilder(lil.funcs.head)
-    val petriNet = PetriNetBuilder(operationGraph)
-    Files.writeString(Path.of("target/opgraph.dot"), PrettyPrint.operationGraphToDot(operationGraph))
-    Files.writeString(Path.of("target/petrinet.dot"), PrettyPrint.petriNetToDot(petriNet))
-    Files.writeString(Path.of("target/cfg.dot"), PrettyPrint.funcToDot(lil.funcs.head, CfgGraph(lil.funcs.head)))
+    Files.writeString(Path.of("target/cfgBig.dot"), PrettyPrint.funcToDot(lil.funcs.head, CfgGraph(lil.funcs.head)))
     Files.writeString(Path.of("target/cfg.dot"), PrettyPrint.cfgToDot(CfgGraph(lil.funcs.head)))
+    val operationGraph = OperationGraphBuilder(lil.funcs.head)
+    Files.writeString(Path.of("target/opgraph.dot"), PrettyPrint.operationGraphToDot(operationGraph))
+    val petriNet = PetriNetBuilder(operationGraph)
+    Files.writeString(Path.of("target/petrinet.dot"), PrettyPrint.petriNetToDot(petriNet))
     Files.writeString(Path.of("target/net.net"), PrettyPrint.petriNetToTina(petriNet))
 
 end Main3

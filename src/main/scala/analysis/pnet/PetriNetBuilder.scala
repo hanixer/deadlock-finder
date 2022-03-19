@@ -28,37 +28,39 @@ class PetriNetBuilder(operationGraph: OperationGraph):
 
   private def processEntry(ognode: OGNode, prevTran: Transition): Unit =
     if seen.add(ognode) then
+      val successors = operationGraph.successors(ognode)
+      val p = new Place
       ognode match
         case curr: CallNode =>
-          val p = new Place
+          addEdge(prevTran, p)
           val group = getOrCreateGroup(curr)
-          operationGraph.successors(curr).foreach { next =>
+          if successors.length == 1 then
+            val next = successors.head
             val nextTran = getOrCreateTransition(next)
-
-            addEdge(prevTran, p)
             addEdge(p, nextTran)
             edges ++= group.connect(curr, prevTran, nextTran)
-
             queue += ((next, nextTran))
-          }
+          else if successors.length > 1 then
+            val currTran = getOrCreateTransition(curr)
+            addEdge(p, currTran)
+            edges ++= group.connect(curr, prevTran, currTran)
+            operationGraph.successors(curr).foreach { next =>
+              queue += ((next, currTran))
+            }
+          else
+            assert(false, "PetriNetBuilder.processEntry: Call node has no successor")
 
         case curr: IntermediateNode =>
-          val p = new Place
-          val successors = operationGraph.successors(curr)
           if successors.isEmpty then
-            val lastP = new Place
-            addEdge(prevTran, lastP)
+            addEdge(prevTran, p)
           else
             successors.foreach { next =>
               next match
                 case nexti: IntermediateNode =>
                   val nextTran = getOrCreateTransition(next)
-
                   addEdge(prevTran, p)
                   addEdge(p, nextTran)
-
                   queue += ((next, nextTran))
-
                 case _ =>
                   queue += ((next, prevTran))
             }

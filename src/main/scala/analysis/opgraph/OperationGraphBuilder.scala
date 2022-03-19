@@ -19,6 +19,7 @@ class OperationGraphBuilder(func: FuncDecl):
   private val seen = mutable.Set.empty[String]
   private val edges = ListBuffer.empty[(Node, Node)]
   private val intermediates = mutable.HashMap.empty[String, IntermediateNode]
+  private val callNodes = mutable.HashMap.empty[CallExpr, CallNode]
   private val queue = mutable.Queue.empty[QueueEntry]
 
   def build(): OperationGraph =
@@ -44,16 +45,12 @@ class OperationGraphBuilder(func: FuncDecl):
 
     val block = func.labelToBlock(entry.label)
 
-    // Handle statements if block was not processed.
-    val pred2 =
-      if !seen(entry.label) then handleStmts(block.stmts, pred1, currRank)
-      else pred1
+    // Handle statements.
+    val pred2 = handleStmts(block.stmts, pred1, currRank)
 
-    val next = nextLabels(block.transfer).map {
-      QueueEntry(_, pred2, currRank)
-    }
-
-    if !seen(entry.label) then queue ++= next
+    if !seen(entry.label) then
+      val next = nextLabels(block.transfer).map { QueueEntry(_, pred2, currRank) }
+      queue ++= next
 
     seen += entry.label
 
@@ -83,15 +80,24 @@ class OperationGraphBuilder(func: FuncDecl):
     case _                                   => None
 
   def tryMakeNodeFromCall(expr: CallExpr, processRank: Option[ProcessRank]): Option[Node] =
-    processRank match
-      case Some(rank) =>
-        expr.args.lift(5) match
-          case Some(n: IntLiteral) =>
-            if expr.name == "mpi.Comm.Send" then Some(new SendNode(rank, n.n))
-            else if expr.name == "mpi.Comm.Recv" then Some(new RecvNode(rank, n.n))
-            else None
-          case _ => None
-      case None => None
+    def update(node: CallNode): Option[CallNode] =
+      callNodes.put(expr, node)
+      Some(node)
+
+    val existing = callNodes.get(expr)
+    if existing.isDefined then existing
+    else
+      processRank match
+        case Some(rank) =>
+          expr.args.lift(5) match
+            case Some(n: IntLiteral) =>
+              if expr.name == "mpi.Comm.Send" then
+                update(new SendNode(rank, n.n))
+              else if expr.name == "mpi.Comm.Recv" then
+                update(new RecvNode(rank, n.n))
+              else None
+            case _ => None
+        case None => None
 
   def nextLabels(t: Transfer): List[String] = t match
     case j: Jump      => List(j.label)
