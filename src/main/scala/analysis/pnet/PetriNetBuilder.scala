@@ -15,8 +15,15 @@ class PetriNetBuilder(operationGraph: OperationGraph):
   private val groupsAnyRecv = HashMap.empty[ProcessRank, NodeGroup]
   private val transitions = HashMap.empty[OGNode, Transition]
   private val seen = Set.empty[OGNode]
+  private val groupsBuilder = new NodeGroupBuilder(operationGraph)
+  private val nodeToGroups = groupsBuilder.nodeToGroups
+  private val allGroups = groupsBuilder.allGroups
 
   def build(): PetriNet =
+    // Add inner edges for all groups
+    for group <- allGroups do
+      edges ++= group.innerEdges
+
     val firstP = new Place
     val firstT = new Transition
     addEdge(firstP, firstT)
@@ -35,7 +42,7 @@ class PetriNetBuilder(operationGraph: OperationGraph):
       ognode match
         case curr: CallNode =>
           addEdge(prevTran, p)
-          val groups = getOrCreateGroups(curr)
+          val groups = getGroups(curr)
           if successors.length == 1 then
             val next = successors.head
             val nextTran = getOrCreateTransition(next)
@@ -77,43 +84,7 @@ class PetriNetBuilder(operationGraph: OperationGraph):
         transitions.put(node, t)
         t
 
-  def getOrCreateGroups(node: CallNode): List[NodeGroup] =
-    node match
-      case n: SendNode =>
-        val groupAny = getOrCreateGroupAnyRecv(ProcessRank.Concrete(n.callee))
-        val info = GroupInfo(node)
-        groups.get(info) match
-          case Some(group) =>
-            List(group, groupAny)
-          case None =>
-            val group = new NodeGroup(info)
-            group.innerEdges.foreach(addEdge)
-            groups.put(info, group)
-            List(group, groupAny)
-      case n: RecvNode =>
-        n.callee match
-          case s: ProcessRank.Concrete =>
-            val info = GroupInfo(node)
-            groups.get(info) match
-              case Some(group) => List(group)
-              case None =>
-                val group = new NodeGroup(info)
-                group.innerEdges.foreach(addEdge)
-                groups.put(info, group)
-                List(group)
-          case ProcessRank.AnyRank =>
-            val group = getOrCreateGroupAnyRecv(n.caller)
-            List(group)
-
-  def getOrCreateGroupAnyRecv(caller: ProcessRank): NodeGroup =
-    groupsAnyRecv.get(caller) match
-      case Some(group) => group
-      case None =>
-        val info = GroupInfo(ProcessRank.AnyRank, caller)
-        val group = new NodeGroup(info)
-        group.innerEdges.foreach(addEdge)
-        groupsAnyRecv.put(caller, group)
-        group
+  def getGroups(node: CallNode): List[NodeGroup] = nodeToGroups(node)
 
   def addEdge(from: Node, to: Node): Unit =
     edges += ((from, to))
