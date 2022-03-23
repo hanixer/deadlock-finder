@@ -15,7 +15,7 @@ object GroupInfo:
     case n: RecvNode =>
       GroupInfo(n.receiver, n.sender)
 
-class NodeGroup:
+class NodeGroup(val info: GroupInfo):
   val sendEnter = new Place
   val sendExit = new Place
   val recvEnter = new Place

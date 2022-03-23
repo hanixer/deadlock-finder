@@ -86,7 +86,7 @@ class PetriNetBuilder(operationGraph: OperationGraph):
           case Some(group) =>
             List(group, groupAny)
           case None =>
-            val group = new NodeGroup
+            val group = new NodeGroup(info)
             group.innerEdges.foreach(addEdge)
             groups.put(info, group)
             List(group, groupAny)
@@ -97,7 +97,7 @@ class PetriNetBuilder(operationGraph: OperationGraph):
             groups.get(info) match
               case Some(group) => List(group)
               case None =>
-                val group = new NodeGroup
+                val group = new NodeGroup(info)
                 group.innerEdges.foreach(addEdge)
                 groups.put(info, group)
                 List(group)
@@ -109,7 +109,8 @@ class PetriNetBuilder(operationGraph: OperationGraph):
     groupsAnyRecv.get(sender) match
       case Some(group) => group
       case None =>
-        val group = new NodeGroup
+        val info = GroupInfo(ProcessRank.AnyRank, ProcessRank.AnyRank) // TODO
+        val group = new NodeGroup(info)
         group.innerEdges.foreach(addEdge)
         groupsAnyRecv.put(sender, group)
         group

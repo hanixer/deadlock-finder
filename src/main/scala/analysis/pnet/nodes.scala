@@ -1,10 +1,11 @@
 package deadlockFinder
 package analysis.pnet
 
-trait Node
+trait Node:
+  val label: String = ""
 
-class Transition extends Node
+class Transition(override val label: String = "") extends Node
 
-class Place extends Node
+class Place(override val label: String = "") extends Node
 
 type Edge = (Node, Node)
