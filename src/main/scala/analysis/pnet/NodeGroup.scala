@@ -13,9 +13,9 @@ object GroupInfo:
     case n: SendNode =>
       GroupInfo(n.sender, ProcessRank.Concrete(n.receiver))
     case n: RecvNode =>
-      GroupInfo(ProcessRank.Concrete(n.receiver), n.sender)
+      GroupInfo(n.receiver, n.sender)
 
-class NodeGroup(val info: GroupInfo):
+class NodeGroup:
   val sendEnter = new Place
   val sendExit = new Place
   val recvEnter = new Place

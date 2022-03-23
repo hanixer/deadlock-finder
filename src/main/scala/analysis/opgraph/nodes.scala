@@ -8,12 +8,10 @@ trait Node
 class IntermediateNode(val label: String) extends Node:
   override def toString: String = s"Intermediate $label"
 
-trait CallNode extends Node:
-  def sender: ProcessRank
-  def receiver: Int
+trait CallNode extends Node
 
 class SendNode(val sender: ProcessRank, val receiver: Int) extends CallNode:
   override def toString: String = s"Send $sender => $receiver"
 
-class RecvNode(val sender: ProcessRank, val receiver: Int) extends CallNode:
+class RecvNode(val sender: ProcessRank, val receiver: ProcessRank) extends CallNode:
   override def toString: String = s"Recv $sender <= $receiver"

@@ -3,7 +3,7 @@ package analysis.opgraph
 
 import analysis.{PredicatesPropagation, ProcessRank}
 import cfg.CfgGraph
-import hil.{CallExpr, IntLiteral}
+import hil.{CallExpr, IntLiteral, StaticFieldAccess}
 import lil.*
 
 import scala.annotation.tailrec
@@ -94,9 +94,14 @@ class OperationGraphBuilder(func: FuncDecl):
               if expr.name == "mpi.Comm.Send" then
                 update(new SendNode(rank, n.n))
               else if expr.name == "mpi.Comm.Recv" then
-                update(new RecvNode(rank, n.n))
+                update(new RecvNode(rank, ProcessRank.Concrete(n.n)))
               else None
-            case _ => None
+            case Some(StaticFieldAccess("mpi.MPI", "ANY_SOURCE", _)) =>
+              if expr.name == "mpi.Comm.Recv" then
+                update(new RecvNode(rank, ProcessRank.AnyRank))
+              else None
+            case _ =>
+              None
         case None => None
 
   def nextLabels(t: Transfer): List[String] = t match

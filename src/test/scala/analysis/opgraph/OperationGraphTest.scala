@@ -18,10 +18,10 @@ class OperationGraphTest extends AnyFunSuite:
     val operationGraph = OperationGraphBuilder(lil.funcs.head)
     val n1 = new IntermediateNode("entry")
     val n2 = new SendNode(ProcessRank.Concrete(0), 1)
-    val n3 = new RecvNode(ProcessRank.Concrete(1), 0)
+    val n3 = new RecvNode(ProcessRank.Concrete(1), ProcessRank.Concrete(0))
     val n4 = new IntermediateNode("bb2")
     val n5 = new SendNode(ProcessRank.Concrete(1), 0)
-    val n6 = new RecvNode(ProcessRank.Concrete(0), 1)
+    val n6 = new RecvNode(ProcessRank.Concrete(0), ProcessRank.Concrete(1))
     val n7 = new IntermediateNode("end")
 
     val expected = List(
