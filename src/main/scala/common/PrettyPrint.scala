@@ -56,8 +56,8 @@ object PrettyPrint:
     val nodeToIndex = petriNet.nodes.zipWithIndex.toMap
     val nodeDefs = nodeToIndex.toList.map { (n, i) =>
       n match
-        case p: Place      => s"$i [label=${names(n)};shape=circle]"
-        case t: Transition => s"$i [label=${names(n)};shape=box]"
+        case p: Place      => s"$i [label=\"${names(n)}\";shape=oval]"
+        case t: Transition => s"$i [label=\"${names(n)}\";shape=box]"
     }
     val edges = petriNet.edges.map { (n, m) =>
       val i1 = nodeToIndex(n)
@@ -72,8 +72,14 @@ object PrettyPrint:
   def namePetriNetNodes(petriNet: PetriNet): Map[Node, String] =
     val trs = petriNet.transitions
     val pls = petriNet.places
-    val trsMap: Map[Node, String] = trs.zipWithIndex.map((n, i) => (n, s"tr$i")).toMap
-    val plsMap = pls.zipWithIndex.map((n, i) => (n, s"pl$i")).toMap
+    val trsMap: Map[Node, String] = trs.zipWithIndex.map { (n, i) =>
+      if n.label.isEmpty then (n, s"tr$i")
+      else (n, s"{${n.label}}")
+    }.toMap
+    val plsMap = pls.zipWithIndex.map { (n, i) =>
+      if n.label.isEmpty then (n, s"pl$i")
+      else (n, s"{${n.label}}")
+    }.toMap
     trsMap ++ plsMap
 
   def petriNetToTina(petriNet: PetriNet): String =

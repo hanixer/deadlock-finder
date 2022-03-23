@@ -16,11 +16,15 @@ object GroupInfo:
       GroupInfo(n.callee, n.caller)
 
 class NodeGroup(val info: GroupInfo):
-  val sendEnter = new Place
-  val sendExit = new Place
-  val recvEnter = new Place
-  val recvExit = new Place
-  val transition = new Transition
+  private val senderS = info.sender.toShortString
+  private val receiverS = info.receiver.toShortString
+  private val arrow = s"$senderS => $receiverS"
+
+  val sendEnter = new Place(s"Enter sndr $arrow")
+  val sendExit = new Place(s"Exit sndr $arrow")
+  val recvEnter = new Place(s"Enter rcvr $arrow")
+  val recvExit = new Place(s"Exit rcvr $arrow")
+  val transition = new Transition(s"Sync: $arrow")
 
   def innerEdges: List[Edge] = List(
     (sendEnter, transition),
