@@ -80,7 +80,7 @@ class PetriNetBuilder(operationGraph: OperationGraph):
   def getOrCreateGroups(node: CallNode): List[NodeGroup] =
     node match
       case n: SendNode =>
-        val groupAny = getOrCreateGroupAnyRecv(ProcessRank.Concrete(n.receiver))
+        val groupAny = getOrCreateGroupAnyRecv(ProcessRank.Concrete(n.callee))
         val info = GroupInfo(node)
         groups.get(info) match
           case Some(group) =>
@@ -91,7 +91,7 @@ class PetriNetBuilder(operationGraph: OperationGraph):
             groups.put(info, group)
             List(group, groupAny)
       case n: RecvNode =>
-        n.receiver match
+        n.callee match
           case s: ProcessRank.Concrete =>
             val info = GroupInfo(node)
             groups.get(info) match
@@ -102,17 +102,17 @@ class PetriNetBuilder(operationGraph: OperationGraph):
                 groups.put(info, group)
                 List(group)
           case ProcessRank.AnyRank =>
-            val group = getOrCreateGroupAnyRecv(n.sender)
+            val group = getOrCreateGroupAnyRecv(n.caller)
             List(group)
 
-  def getOrCreateGroupAnyRecv(sender: ProcessRank): NodeGroup =
-    groupsAnyRecv.get(sender) match
+  def getOrCreateGroupAnyRecv(caller: ProcessRank): NodeGroup =
+    groupsAnyRecv.get(caller) match
       case Some(group) => group
       case None =>
-        val info = GroupInfo(ProcessRank.AnyRank, ProcessRank.AnyRank) // TODO
+        val info = GroupInfo(ProcessRank.AnyRank, caller)
         val group = new NodeGroup(info)
         group.innerEdges.foreach(addEdge)
-        groupsAnyRecv.put(sender, group)
+        groupsAnyRecv.put(caller, group)
         group
 
   def addEdge(from: Node, to: Node): Unit =

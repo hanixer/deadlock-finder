@@ -51,9 +51,9 @@ class OperationGraphTest extends AnyFunSuite:
 
   def compare(n1: Node, n2: Node): Boolean = (n1, n2) match
     case (s1: SendNode, s2: SendNode) =>
-      s1.sender == s2.sender && s1.receiver == s2.receiver
+      s1.caller == s2.caller && s1.callee == s2.callee
     case (r1: RecvNode, r2: RecvNode) =>
-      r1.sender == r2.sender && r1.receiver == r2.receiver
+      r1.caller == r2.caller && r1.callee == r2.callee
     case (i1: IntermediateNode, i2: IntermediateNode) =>
       i1.label == i2.label
     case _ => false

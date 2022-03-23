@@ -11,9 +11,9 @@ object GroupInfo:
   /** Creates GroupInfo from call node. */
   def apply(node: CallNode): GroupInfo = node match
     case n: SendNode =>
-      GroupInfo(n.sender, ProcessRank.Concrete(n.receiver))
+      GroupInfo(n.caller, ProcessRank.Concrete(n.callee))
     case n: RecvNode =>
-      GroupInfo(n.receiver, n.sender)
+      GroupInfo(n.callee, n.caller)
 
 class NodeGroup(val info: GroupInfo):
   val sendEnter = new Place
