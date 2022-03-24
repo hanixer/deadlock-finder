@@ -46,10 +46,20 @@ class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
           if successors.length == 1 then
             val next = successors.head
             val nextTran = getOrCreateTransition(next)
-            addEdge(p, nextTran)
-            for group <- groups do
-              edges ++= group.connect(curr, prevTran, nextTran)
-            queue += ((next, nextTran))
+            if verbose && next.isInstanceOf[IntermediateNode] then
+              val midT = new Transition
+              val midP = new Place
+              addEdge(p, midT)
+              addEdge(midT, midP)
+              addEdge(midP, nextTran)
+              for group <- groups do
+                edges ++= group.connect(curr, prevTran, midT)
+              queue += ((next, nextTran))
+            else  
+              addEdge(p, nextTran)
+              for group <- groups do
+                edges ++= group.connect(curr, prevTran, nextTran)
+              queue += ((next, nextTran))
           else if successors.length > 1 then
             val nextTran = new Transition
             addEdge(p, nextTran)
@@ -65,7 +75,7 @@ class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
           if successors.isEmpty then
             addEdge(prevTran, p)
           else
-            successors.foreach { next =>
+            for next <- successors do
               next match
                 case nexti: IntermediateNode =>
                   val nextTran = getOrCreateTransition(next)
@@ -73,8 +83,14 @@ class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
                   addEdge(p, nextTran)
                   queue += ((next, nextTran))
                 case _ =>
-                  queue += ((next, prevTran))
-            }
+                  if verbose then
+                    val nextP = new Place
+                    val nextT = new Transition
+                    addEdge(prevTran, nextP)
+                    addEdge(nextP, nextT)
+                    queue += ((next, nextT))
+                  else
+                    queue += ((next, prevTran))
 
   def getOrCreateTransition(node: OGNode): Transition =
     transitions.get(node) match
