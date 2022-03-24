@@ -2,8 +2,7 @@ package deadlockFinder
 package analysis.pnet
 
 import analysis.ProcessRank
-
-import deadlockFinder.analysis.opgraph.{CallNode, RecvNode, SendNode}
+import analysis.opgraph.{CallNode, RecvNode, SendNode}
 
 case class GroupInfo(sender: ProcessRank, receiver: ProcessRank)
 
@@ -38,3 +37,13 @@ class NodeGroup(val info: GroupInfo):
       List((prevTran, sendEnter), (sendExit, nextTran))
     case n: RecvNode =>
       List((prevTran, recvEnter), (recvExit, nextTran))
+
+case class NodeGate(enter: Place, exit: Place, isReceiver: Boolean)
+
+object NodeGate:
+  def apply(sender: ProcessRank, receiver: ProcessRank, isReceiver: Boolean): NodeGate =
+    val arrow = s"${sender.toShortString} => ${receiver.toShortString}"
+    val label = if isReceiver then "Recv" else "Send"
+    val enter = new Place(s"$label in $arrow")
+    val exit = new Place(s"$label out $arrow")
+    NodeGate(enter, exit, isReceiver)

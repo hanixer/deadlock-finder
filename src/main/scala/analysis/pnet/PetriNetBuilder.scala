@@ -16,13 +16,10 @@ class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
   private val transitions = HashMap.empty[OGNode, Transition]
   private val seen = Set.empty[OGNode]
   private val groupsBuilder = new NodeGroupBuilder(operationGraph)
-  private val nodeToGroups = groupsBuilder.nodeToGroups
-  private val allGroups = groupsBuilder.allGroups
 
   def build(): PetriNet =
     // Add inner edges for all groups
-    for group <- allGroups do
-      edges ++= group.innerEdges
+    edges ++= groupsBuilder.innerEdges
 
     val firstP = new Place
     val firstT = new Transition
@@ -42,7 +39,6 @@ class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
       ognode match
         case curr: CallNode =>
           addEdge(prevTran, p)
-          val groups = getGroups(curr)
           if successors.length == 1 then
             val next = successors.head
             val nextTran = getOrCreateTransition(next)
@@ -52,19 +48,22 @@ class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
               addEdge(p, midT)
               addEdge(midT, midP)
               addEdge(midP, nextTran)
-              for group <- groups do
-                edges ++= group.connect(curr, prevTran, midT)
+              edges ++= groupsBuilder.edgesToConnectNode(curr, prevTran, midT)
+//              for group <- groups do
+//                edges ++= group.connect(curr, prevTran, midT)
               queue += ((next, nextTran))
-            else  
+            else
               addEdge(p, nextTran)
-              for group <- groups do
-                edges ++= group.connect(curr, prevTran, nextTran)
+              edges ++= groupsBuilder.edgesToConnectNode(curr, prevTran, nextTran)
+//              for group <- groups do
+//                edges ++= group.connect(curr, prevTran, nextTran)
               queue += ((next, nextTran))
           else if successors.length > 1 then
             val nextTran = new Transition
             addEdge(p, nextTran)
-            for group <- groups do
-              edges ++= group.connect(curr, prevTran, nextTran)
+            edges ++= groupsBuilder.edgesToConnectNode(curr, prevTran, nextTran)
+//            for group <- groups do
+//              edges ++= group.connect(curr, prevTran, nextTran)
             operationGraph.successors(curr).foreach { next =>
               queue += ((next, nextTran))
             }
@@ -99,8 +98,6 @@ class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
         val t = new Transition
         transitions.put(node, t)
         t
-
-  def getGroups(node: CallNode): List[NodeGroup] = nodeToGroups(node)
 
   def addEdge(from: Node, to: Node): Unit =
     edges += ((from, to))
