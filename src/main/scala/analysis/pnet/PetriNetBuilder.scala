@@ -6,7 +6,7 @@ import analysis.opgraph.{CallNode, IntermediateNode, OperationGraph, RecvNode, S
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, ListBuffer, Queue, Set}
 
-class PetriNetBuilder(operationGraph: OperationGraph):
+class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
   case class QueueEntry(from: Node, to: Node, transition: Transition)
 
   private val edges = ListBuffer.empty[Edge]
@@ -49,15 +49,15 @@ class PetriNetBuilder(operationGraph: OperationGraph):
             addEdge(p, nextTran)
             for group <- groups do
               edges ++= group.connect(curr, prevTran, nextTran)
-              queue += ((next, nextTran))
+            queue += ((next, nextTran))
           else if successors.length > 1 then
             val currTran = getOrCreateTransition(curr)
             addEdge(p, currTran)
             for group <- groups do
               edges ++= group.connect(curr, prevTran, currTran)
-              operationGraph.successors(curr).foreach { next =>
-                queue += ((next, currTran))
-              }
+            operationGraph.successors(curr).foreach { next =>
+              queue += ((next, currTran))
+            }
           else
             assert(false, "PetriNetBuilder.processEntry: Call node has no successor")
 
