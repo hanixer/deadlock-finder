@@ -51,12 +51,12 @@ class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
               edges ++= group.connect(curr, prevTran, nextTran)
             queue += ((next, nextTran))
           else if successors.length > 1 then
-            val currTran = getOrCreateTransition(curr)
-            addEdge(p, currTran)
+            val nextTran = new Transition
+            addEdge(p, nextTran)
             for group <- groups do
-              edges ++= group.connect(curr, prevTran, currTran)
+              edges ++= group.connect(curr, prevTran, nextTran)
             operationGraph.successors(curr).foreach { next =>
-              queue += ((next, currTran))
+              queue += ((next, nextTran))
             }
           else
             assert(false, "PetriNetBuilder.processEntry: Call node has no successor")
@@ -90,4 +90,4 @@ class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
     edges += ((from, to))
 
 object PetriNetBuilder:
-  def apply(operationGraph: OperationGraph): PetriNet = new PetriNetBuilder(operationGraph).build()
+  def apply(operationGraph: OperationGraph, verbose: Boolean = true): PetriNet = new PetriNetBuilder(operationGraph).build()
