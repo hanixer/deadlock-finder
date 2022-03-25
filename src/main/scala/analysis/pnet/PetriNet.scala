@@ -1,19 +1,9 @@
 package deadlockFinder
 package analysis.pnet
 
-class PetriNet(val root: Place, val edges: List[Edge]):
-  private val map = edges.groupMap(_._1)(_._2)
-  private val reverseMap = edges.groupMap(_._2)(_._1)
+import common.Graph
 
-  val nodes: List[Node] =
-    edges.flatMap((n, m) => List(n, m)).distinct
-
-  def successors(node: Node): List[Node] =
-    map.getOrElse(node, List())
-
-  def predecessors(node: Node): List[Node] =
-    reverseMap.getOrElse(node, List())
-
+class PetriNet(val root: Place, edges: List[Edge]) extends Graph[Node](edges):
   def transitions: List[Transition] =
     nodes.flatMap(n => n match {
       case t: Transition => Some(t)

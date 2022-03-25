@@ -17,7 +17,7 @@ class OperationGraphBuilder(func: FuncDecl):
   val cfg: CfgGraph = CfgGraph(func)
   val processRanks: Map[String, ProcessRank] = PredicatesPropagation.propagate(func)
   private val seen = mutable.Set.empty[String]
-  private val edges = ListBuffer.empty[(Node, Node)]
+  private val edges = ListBuffer.empty[Edge]
   private val intermediates = mutable.HashMap.empty[String, IntermediateNode]
   private val callNodes = mutable.HashMap.empty[CallExpr, CallNode]
   private val queue = mutable.Queue.empty[QueueEntry]
@@ -28,15 +28,13 @@ class OperationGraphBuilder(func: FuncDecl):
 
     while queue.nonEmpty do processEntry(queue.dequeue())
 
-    val initialMap = edges.flatMap(e => List(e._1, e._2)).map((_, List())).toMap
-    val adjMap = initialMap ++ edges.toList.groupMap(_._1)(_._2)
-
-    new OperationGraph(root, adjMap)
+    new OperationGraph(root, edges.toList)
 
   private def processEntry(entry: QueueEntry) =
+    val prevRank = entry.rank
     val currRank = processRanks.get(entry.label)
     val isRankChanged =
-      entry.rank.isDefined && entry.rank != currRank && entry.rank.get.isInstanceOf[ProcessRank.Concrete]
+      prevRank.isDefined && prevRank != currRank && prevRank.get.isInstanceOf[ProcessRank.Concrete]
 
     // Create new intermediate node if needed.
     val pred1 = createIntermediateIfNeeded(entry, isRankChanged)

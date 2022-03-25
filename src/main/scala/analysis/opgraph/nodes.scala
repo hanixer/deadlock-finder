@@ -15,3 +15,5 @@ class SendNode(val caller: ProcessRank, val callee: Int) extends CallNode:
 
 class RecvNode(val caller: ProcessRank, val callee: ProcessRank) extends CallNode:
   override def toString: String = s"Recv $caller <= $callee"
+
+type Edge = (Node, Node)

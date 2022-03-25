@@ -1,13 +1,7 @@
 package deadlockFinder
 package analysis.opgraph
 
-class OperationGraph(val root: Node, map: Map[Node, List[Node]]):
-    
-  def successors(node: Node): List[Node] = map(node)
+import common.Graph
 
-  def nodes: List[Node] = map.keys.toList
+class OperationGraph(val root: Node, edges: List[Edge]) extends Graph[Node](edges)
 
-  def edges: List[(Node, Node)] =
-    map.toList.flatMap { p => 
-      p._2.map { (p._1, _) }
-    }
