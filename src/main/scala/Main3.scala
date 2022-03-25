@@ -1,6 +1,6 @@
 package deadlockFinder
 
-import analysis.opgraph.OperationGraphBuilder
+import analysis.opgraph.{InsertAdditionalNodes, OperationGraphBuilder}
 import analysis.pnet.PetriNetBuilder
 import cfg.CfgGraph
 import common.PrettyPrint
@@ -12,7 +12,7 @@ import java.nio.file.{Files, Path}
 
 object Main3:
   def main(args: Array[String]): Unit =
-    val path = "examples/parallel/MpiSendRecvConditions.java"
+    val path = "examples/parallel/MpiSendRecvConditions4.java"
     val lil = Util.fileToSsa(path)
     Files.writeString(Path.of("target/cfgBig.dot"), PrettyPrint.funcToDot(lil.funcs.head, CfgGraph(lil.funcs.head)))
     Files.writeString(Path.of("target/cfg.dot"), PrettyPrint.cfgToDot(CfgGraph(lil.funcs.head)))

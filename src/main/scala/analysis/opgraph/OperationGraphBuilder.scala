@@ -108,5 +108,9 @@ class OperationGraphBuilder(func: FuncDecl):
     case _            => List()
 
 object OperationGraphBuilder:
-  def apply(func: FuncDecl): OperationGraph =
-    new OperationGraphBuilder(func).build()
+  def apply(func: FuncDecl, verbose: Boolean = true): OperationGraph =
+    val result = new OperationGraphBuilder(func).build()
+    if verbose then
+      InsertAdditionalNodes(result)
+    else
+      result
