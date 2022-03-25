@@ -49,21 +49,15 @@ class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
               addEdge(midT, midP)
               addEdge(midP, nextTran)
               edges ++= groupsBuilder.edgesToConnectNode(curr, prevTran, midT)
-//              for group <- groups do
-//                edges ++= group.connect(curr, prevTran, midT)
               queue += ((next, nextTran))
             else
               addEdge(p, nextTran)
               edges ++= groupsBuilder.edgesToConnectNode(curr, prevTran, nextTran)
-//              for group <- groups do
-//                edges ++= group.connect(curr, prevTran, nextTran)
               queue += ((next, nextTran))
           else if successors.length > 1 then
             val nextTran = new Transition
             addEdge(p, nextTran)
             edges ++= groupsBuilder.edgesToConnectNode(curr, prevTran, nextTran)
-//            for group <- groups do
-//              edges ++= group.connect(curr, prevTran, nextTran)
             operationGraph.successors(curr).foreach { next =>
               queue += ((next, nextTran))
             }
