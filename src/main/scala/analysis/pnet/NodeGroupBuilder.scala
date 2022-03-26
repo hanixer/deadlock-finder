@@ -48,12 +48,12 @@ class NodeGroupBuilder(operationGraph: OperationGraph):
           senderGatesList
             .filter { (s, rm) => rm.contains(r) && !s.isAnyRank }
             .flatMap { (s, rm ) =>
-              val t = new Transition(s"Sync *: ${s.toShortString} => ${r.toShortString}")
+              val t = new Transition(s"*${s.toShortString}=>${r.toShortString}")
               val sGate = rm(r)
               edgesForGroup(t, sGate, gate)
             }
         else
-          val t = new Transition(s"Sync: ${s.toShortString} => ${r.toShortString}")
+          val t = new Transition(s"${s.toShortString}=>${r.toShortString}")
           val sGate = senderGates(s)(r)
           edgesForGroup(t, sGate, gate)
       }

@@ -42,8 +42,8 @@ case class NodeGate(enter: Place, exit: Place, isReceiver: Boolean)
 
 object NodeGate:
   def apply(sender: ProcessRank, receiver: ProcessRank, isReceiver: Boolean): NodeGate =
-    val arrow = s"${sender.toShortString} => ${receiver.toShortString}"
-    val label = if isReceiver then "Recv" else "Send"
-    val enter = new Place(s"$label in $arrow")
-    val exit = new Place(s"$label out $arrow")
+    val arrow = s"${sender.toShortString}=>${receiver.toShortString}"
+    val label = if isReceiver then "R" else "S"
+    val enter = new Place(s"$label I $arrow")
+    val exit = new Place(s"$label O $arrow")
     NodeGate(enter, exit, isReceiver)
