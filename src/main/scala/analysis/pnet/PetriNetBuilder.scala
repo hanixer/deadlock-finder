@@ -2,7 +2,16 @@ package deadlockFinder
 package analysis.pnet
 
 import analysis.ProcessRank
-import analysis.opgraph.{CallNode, IntermediateNode, MergeNode, OperationGraph, RecvNode, SendNode, SplitNode, Node as OGNode}
+import analysis.opgraph.{
+  CallNode,
+  IntermediateNode,
+  MergeNode,
+  OperationGraph,
+  RecvNode,
+  SendNode,
+  SplitNode,
+  Node as OGNode
+}
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, ListBuffer, Queue, Set}
 
@@ -34,61 +43,55 @@ class PetriNetBuilder(operationGraph: OperationGraph):
     new PetriNet(firstP, edges.toList)
 
   private def processEntry(ognode: OGNode, prevTran: Transition): Unit =
-    val p = new Place
     val isSeen = seen(ognode)
+
     ognode match
-      case curr: CallNode =>
-        processCallNode(prevTran, p, curr)
-
-      case curr: SplitNode =>
-        processSplitNode(ognode, prevTran, p)
-
-      case curr: MergeNode =>
-        processMergeNode(prevTran, curr)
-
-      case curr: IntermediateNode =>
-        processIntermediateNode(prevTran, p, curr)
+      case curr: CallNode         => processCallNode(prevTran, curr)
+      case curr: SplitNode        => processSplitNode(prevTran, curr)
+      case curr: MergeNode        => processMergeNode(prevTran, curr)
+      case curr: IntermediateNode => processIntermediateNode(prevTran, curr)
 
     seen.add(ognode)
 
-  private def processCallNode(prevTran: Transition, p: Place, curr: CallNode): Unit =
+  private def processCallNode(prevTran: Transition, curr: CallNode): Unit =
     if !seen(curr) then
+      val newP = new Place
       val successors = operationGraph.successors(curr)
-      addEdge(prevTran, p)
+      addEdge(prevTran, newP)
       if successors.length == 1 then
         val next = successors.head
         next match
           case n: MergeNode =>
             val nextTran = new Transition
-            addEdge(p, nextTran)
+            addEdge(newP, nextTran)
             edges ++= groupsBuilder.edgesToConnectNode(curr, prevTran, nextTran)
             queue += ((next, nextTran))
           case n: IntermediateNode =>
             val nextTran = getOrCreateSharedTransition(next)
             val midT = new Transition
             val midP = new Place
-            addEdge(p, midT)
+            addEdge(newP, midT)
             addEdge(midT, midP)
             addEdge(midP, nextTran)
             edges ++= groupsBuilder.edgesToConnectNode(curr, prevTran, midT)
             queue += ((next, nextTran))
           case _ =>
             val nextTran = getOrCreateSharedTransition(next)
-            addEdge(p, nextTran)
+            addEdge(newP, nextTran)
             edges ++= groupsBuilder.edgesToConnectNode(curr, prevTran, nextTran)
             queue += ((next, nextTran))
       else if successors.length > 1 then
         assert(false, "PetriNetBuilder.processEntry: Call node has more than one successor")
-      else
-        assert(false, "PetriNetBuilder.processEntry: Call node has no successor")
+      else assert(false, "PetriNetBuilder.processEntry: Call node has no successor")
 
-  private def processSplitNode(ognode: OGNode, prevTran: Transition, p: Place): Unit =
-    if !seen(ognode) then
-      val successors = operationGraph.successors(ognode)
-      addEdge(prevTran, p)
+  private def processSplitNode(prevTran: Transition, curr: SplitNode): Unit =
+    if !seen(curr) then
+      val newP = new Place
+      val successors = operationGraph.successors(curr)
+      addEdge(prevTran, newP)
       for next <- successors do
         val nextTran = new Transition
-        addEdge(p, nextTran)
+        addEdge(newP, nextTran)
         queue += ((next, nextTran))
 
   private def processMergeNode(prevTran: Transition, curr: MergeNode): Unit =
@@ -100,22 +103,22 @@ class PetriNetBuilder(operationGraph: OperationGraph):
         addEdge(mergeP, nextTran)
         queue += ((next, nextTran))
 
-  private def processIntermediateNode(prevTran: Transition, p: Place, curr: IntermediateNode): Unit =
+  private def processIntermediateNode(prevTran: Transition, curr: IntermediateNode): Unit =
     if !seen(curr) then
+      val newP = new Place
       val successors = operationGraph.successors(curr)
-      if successors.isEmpty then
-        addEdge(prevTran, p)
+      if successors.isEmpty then addEdge(prevTran, newP)
       else
         for next <- successors do
           next match
             case n: MergeNode =>
               val nextTran = new Transition
-              addEdge(p, nextTran)
+              addEdge(newP, nextTran)
               queue += ((next, nextTran))
             case n: IntermediateNode =>
               val nextTran = getOrCreateSharedTransition(next)
-              addEdge(prevTran, p)
-              addEdge(p, nextTran)
+              addEdge(prevTran, newP)
+              addEdge(newP, nextTran)
               queue += ((next, nextTran))
             case _ =>
               val nextP = new Place
