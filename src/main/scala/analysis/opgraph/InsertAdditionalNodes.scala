@@ -16,17 +16,18 @@ object InsertAdditionalNodes:
       val nodesByProcess = nodes.flatMap(makeProcessNodePair).groupMap(_._1)(_._2)
 
       for (_, nodes) <- nodesByProcess if nodes.lengthCompare(1) > 0 do
-        val intermediateNode = new IntermediateNode("")
         if isSuccessors then
+          val node = new SplitNode
           toDelete ++= nodes.map { n => (curr, n) }
-          toAdd ++= nodes.map { n => (intermediateNode, n) }
-          toAdd += ((curr, intermediateNode))
+          toAdd ++= nodes.map { n => (node, n) }
+          toAdd += ((curr, node))
         else
+          val node = new MergeNode
           val d = nodes.map { n => (n, curr) }
-          val a = nodes.map { n => (n, intermediateNode) }
+          val a = nodes.map { n => (n, node) }
           toDelete ++= nodes.map { n => (n, curr) }
-          toAdd ++= nodes.map { n => (n, intermediateNode) }
-          toAdd += ((intermediateNode, curr))
+          toAdd ++= nodes.map { n => (n, node) }
+          toAdd += ((node, curr))
 
     for curr <- operationGraph.nodes do
       handleNeighbours(operationGraph.successors(curr), curr, true)

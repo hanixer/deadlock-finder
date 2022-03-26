@@ -8,6 +8,12 @@ trait Node
 class IntermediateNode(val label: String) extends Node:
   override def toString: String = s"Intermediate $label"
 
+class SplitNode(val label: String = "") extends Node:
+  override def toString: String = s"Split $label"
+
+class MergeNode(val label: String = "") extends Node:
+  override def toString: String = s"Merge $label"
+  
 trait CallNode extends Node
 
 class SendNode(val caller: ProcessRank, val callee: Int) extends CallNode:
