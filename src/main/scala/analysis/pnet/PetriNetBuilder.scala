@@ -6,7 +6,7 @@ import analysis.opgraph.{CallNode, IntermediateNode, MergeNode, OperationGraph, 
 
 import scala.collection.mutable.{ArrayBuffer, HashMap, ListBuffer, Queue, Set}
 
-class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
+class PetriNetBuilder(operationGraph: OperationGraph):
   case class QueueEntry(from: Node, to: Node, transition: Transition)
 
   private val edges = ListBuffer.empty[Edge]
@@ -63,7 +63,7 @@ class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
             addEdge(p, nextTran)
             edges ++= groupsBuilder.edgesToConnectNode(curr, prevTran, nextTran)
             queue += ((next, nextTran))
-          case n: IntermediateNode if verbose =>
+          case n: IntermediateNode =>
             val nextTran = getOrCreateSharedTransition(next)
             val midT = new Transition
             val midP = new Place
@@ -112,20 +112,17 @@ class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
               val nextTran = new Transition
               addEdge(p, nextTran)
               queue += ((next, nextTran))
-            case nexti: IntermediateNode =>
+            case n: IntermediateNode =>
               val nextTran = getOrCreateSharedTransition(next)
               addEdge(prevTran, p)
               addEdge(p, nextTran)
               queue += ((next, nextTran))
             case _ =>
-              if verbose then
-                val nextP = new Place
-                val nextT = new Transition
-                addEdge(prevTran, nextP)
-                addEdge(nextP, nextT)
-                queue += ((next, nextT))
-              else
-                queue += ((next, prevTran))
+              val nextP = new Place
+              val nextT = new Transition
+              addEdge(prevTran, nextP)
+              addEdge(nextP, nextT)
+              queue += ((next, nextT))
 
   def getOrCreateSharedTransition(node: OGNode): Transition =
     transitions.get(node) match
@@ -139,4 +136,4 @@ class PetriNetBuilder(operationGraph: OperationGraph, verbose: Boolean = true):
     edges += ((from, to))
 
 object PetriNetBuilder:
-  def apply(operationGraph: OperationGraph, verbose: Boolean = true): PetriNet = new PetriNetBuilder(operationGraph).build()
+  def apply(operationGraph: OperationGraph): PetriNet = new PetriNetBuilder(operationGraph).build()
