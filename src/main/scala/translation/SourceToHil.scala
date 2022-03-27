@@ -294,27 +294,58 @@ class Visitor extends ASTVisitor:
     else println(s"Unresolved method: $node")
 
   override def endVisit(node: PrefixExpression): Unit =
-    // TODO: handle increment/decrement
     val loc = mkSourceLoc(node)
+    val typ = translateType(node.resolveTypeBinding)
+
+    def translateIncrement(op: BinaryOp): SimpleExpr =
+      val operand = getResultSimpleExpr(node.getOperand).asInstanceOf[Variable]
+      val rhs = BinaryExpr(op, operand, IntLiteral(1, loc), loc)
+      val asgn = Assignment(operand.name, rhs, loc)
+      addStmt(asgn)
+      operand
+
     val expr =
-      if node.getOperator == PrefixExpression.Operator.NOT then
+      if node.getOperator == PrefixExpression.Operator.INCREMENT then
+        translateIncrement(BinaryOp.Plus)
+      else if node.getOperator == PrefixExpression.Operator.DECREMENT then
+        translateIncrement(BinaryOp.Minus)
+      else if node.getOperator == PrefixExpression.Operator.NOT then
         val op = UnaryOp.Not
         val e = getResultSimpleExpr(node.getOperand)
-        UnaryExpr(op, e, loc)
+        val expr = UnaryExpr(op, e, loc)
+        val name = addTempVar(typ, loc, Some(expr))
+        Variable(name, loc)
       else
         val op =
           if node.getOperator == PrefixExpression.Operator.MINUS then
             BinaryOp.Minus
           else BinaryOp.Plus
-
         val lhs = IntLiteral(0, loc)
         val rhs = getResultSimpleExpr(node.getOperand)
-        BinaryExpr(op, lhs, rhs, loc)
+        val expr = BinaryExpr(op, lhs, rhs, loc)
+        val name = addTempVar(typ, loc, Some(expr))
+        Variable(name, loc)
 
+    node.setProperty(TranslateProperty, expr)
+
+  override def endVisit(node: PostfixExpression): Unit =
+    val loc = mkSourceLoc(node)
     val typ = translateType(node.resolveTypeBinding)
-    val name = addTempVar(typ, loc, Some(expr))
 
-    node.setProperty(TranslateProperty, Variable(name, mkSourceLoc(node)))
+    def translate(op: BinaryOp): Unit =
+      val operand = getResultSimpleExpr(node.getOperand).asInstanceOf[Variable]
+      val temp = addTempVar(typ, loc, Some(operand))
+      val rhs = BinaryExpr(op, operand, IntLiteral(1, loc), loc)
+      val asgn = Assignment(operand.name, rhs, loc)
+      addStmt(asgn)
+      val expr = Variable(temp, loc)
+      node.setProperty(TranslateProperty, expr)
+
+    if node.getOperator == PostfixExpression.Operator.INCREMENT then
+      translate(BinaryOp.Plus)
+    else if node.getOperator == PostfixExpression.Operator.DECREMENT then
+      translate(BinaryOp.Minus)
+
 
   override def endVisit(node: InfixExpression): Unit =
     val tb = node.resolveTypeBinding
