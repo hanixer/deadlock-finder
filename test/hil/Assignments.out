@@ -1,0 +1,8 @@
+func Assignments.func1(a: int, b: int, c: int, d: int): void {
+  a = a+b
+  d = d-c
+  a = a*b
+  var x: int = a+b
+  b = b/c
+  var y: int = b
+}

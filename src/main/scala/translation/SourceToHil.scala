@@ -16,17 +16,18 @@ import scala.jdk.CollectionConverters.*
   */
 object SourceToHil:
   def apply(cu: CompilationUnit): Program =
-    val visitor = new Visitor
-    cu.accept(visitor)
+    val visitor = new Visitor(cu)
+    visitor.start()
     Program(visitor.getFuncs)
 
-class Visitor extends ASTVisitor:
+class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
   private val TranslateProperty = "Translate"
-  private var compilationUnit: CompilationUnit = null
   private val funcs = ListBuffer[FuncDecl]()
   private val stmtsStack: mutable.Stack[ListBuffer[(Stmt, SourceLoc)]] =
     mutable.Stack()
   private var tempCounter = 0
+
+  def start(): Unit = compilationUnit.accept(this)
 
   def getFuncs: List[FuncDecl] = funcs.toList
 
@@ -117,11 +118,11 @@ class Visitor extends ASTVisitor:
     val static = Modifier.isStatic(binding.getModifiers)
     if !binding.isField then
       val v = Variable(name, loc)
-      node.setProperty(TranslateProperty, v)
+      saveResult(node, v)
     else if static then
       val className = mkFullName(binding.getDeclaringClass)
       val sfa = StaticFieldAccess(className, name, loc)
-      node.setProperty(TranslateProperty, sfa)
+      saveResult(node, sfa)
 
   def translateVariable(node: Name): Unit =
     val binding = node.resolveBinding()
@@ -143,6 +144,9 @@ class Visitor extends ASTVisitor:
   def addStmt(stmt: Stmt): Unit =
     stmtsStack.top.addOne(stmt, stmt.loc)
 
+  def saveResult(node: ASTNode, result: Any): Unit =
+    node.setProperty(TranslateProperty, result)
+
   def getResultExpr(node: ASTNode): Expr =
     Option(getResult[Expr](node))
       .getOrElse(UnsupportedConstruct(mkSourceLoc(node)))
@@ -159,7 +163,6 @@ class Visitor extends ASTVisitor:
     node.getProperty(TranslateProperty).asInstanceOf[A]
 
   override def visit(node: CompilationUnit): Boolean =
-    compilationUnit = node
     true
 
   override def endVisit(node: TypeDeclaration): Unit =
@@ -170,7 +173,7 @@ class Visitor extends ASTVisitor:
       if prop != null then
         val func = prop.asInstanceOf[FuncDecl]
         funcs += func
-    node.setProperty(TranslateProperty, funcs.toList)
+    saveResult(node, funcs.toList)
 
   override def visit(node: MethodDeclaration): Boolean =
     def translateParam(any: AnyRef): Param = {
@@ -192,7 +195,7 @@ class Visitor extends ASTVisitor:
     val loc = mkSourceLoc(node)
     val func = FuncDecl(mkFullName(node), params, retType, body, loc)
 
-    node.setProperty(TranslateProperty, func)
+    saveResult(node, func)
 
     false
 
@@ -289,8 +292,8 @@ class Visitor extends ASTVisitor:
       if shouldMakeTemporary(node) then
         val typ = translateType(node.resolveTypeBinding)
         val name = addTempVar(typ, loc, Some(expr))
-        node.setProperty(TranslateProperty, Variable(name, loc))
-      else node.setProperty(TranslateProperty, expr)
+        saveResult(node, Variable(name, loc))
+      else saveResult(node, expr)
     else println(s"Unresolved method: $node")
 
   override def endVisit(node: PrefixExpression): Unit =
@@ -326,7 +329,7 @@ class Visitor extends ASTVisitor:
         val name = addTempVar(typ, loc, Some(expr))
         Variable(name, loc)
 
-    node.setProperty(TranslateProperty, expr)
+    saveResult(node, expr)
 
   override def endVisit(node: PostfixExpression): Unit =
     val loc = mkSourceLoc(node)
@@ -339,7 +342,7 @@ class Visitor extends ASTVisitor:
       val asgn = Assignment(operand.name, rhs, loc)
       addStmt(asgn)
       val expr = Variable(temp, loc)
-      node.setProperty(TranslateProperty, expr)
+      saveResult(node, expr)
 
     if node.getOperator == PostfixExpression.Operator.INCREMENT then
       translate(BinaryOp.Plus)
@@ -364,12 +367,12 @@ class Visitor extends ASTVisitor:
     if shouldMakeTemporary(node) then
       val typ = translateType(tb)
       val name = addTempVar(typ, loc, Some(expr))
-      node.setProperty(TranslateProperty, Variable(name, loc))
-    else node.setProperty(TranslateProperty, expr)
+      saveResult(node, Variable(name, loc))
+    else saveResult(node, expr)
 
   override def endVisit(node: ParenthesizedExpression): Unit =
     val result = getResultSimpleExpr(node.getExpression)
-    node.setProperty(TranslateProperty, result)
+    saveResult(node, result)
 
   override def endVisit(node: JdtAssignment): Unit =
     // Now we support assignment only to a variable,
@@ -386,7 +389,7 @@ class Visitor extends ASTVisitor:
       val variable = Variable(name, loc)
       val expr = BinaryExpr(op, variable, rhs, loc)
       addStmt(Assignment(name, expr, loc))
-      node.setProperty(TranslateProperty, variable.copy())
+      saveResult(node, variable.copy())
 
     node.getLeftHandSide match
       case sn: SimpleName =>
@@ -404,7 +407,7 @@ class Visitor extends ASTVisitor:
           addStmt(Assignment(name, rhs, loc))
         else
           val expr = UnsupportedConstruct(loc)
-          node.setProperty(TranslateProperty, expr)
+          saveResult(node, expr)
 
   override def visit(node: JdtArrayCreation): Boolean =
     // For now, only arrays of single dimension are supported.
@@ -414,7 +417,7 @@ class Visitor extends ASTVisitor:
     val elementType = translateType(node.getType.getElementType)
     val loc = mkSourceLoc(node)
     val expr = ArrayCreation(sizeExpr, elementType, loc)
-    node.setProperty(TranslateProperty, expr)
+    saveResult(node, expr)
     false
 
   override def visit(node: ArrayInitializer): Boolean =
@@ -426,7 +429,7 @@ class Visitor extends ASTVisitor:
       val elementType = translateType(node.resolveTypeBinding().getElementType)
       val sizeExpr = IntLiteral(size, loc)
       val expr = ArrayCreation(sizeExpr, elementType, loc)
-      node.setProperty(TranslateProperty, expr)
+      saveResult(node, expr)
     false
 
   override def visit(node: SimpleName): Boolean =
@@ -449,12 +452,12 @@ class Visitor extends ASTVisitor:
 
     if tb.getName == "int" then
       val e = IntLiteral(constExpr.asInstanceOf[Int], mkSourceLoc(node))
-      node.setProperty(TranslateProperty, e)
+      saveResult(node, e)
 
     // TODO: handle other literals type, like double and strings.
     // else if tb.getName == "double" then
     // val e = DoubleLiteral(constExpr.asInstanceOf[Double], mkSourceLoc(node))
-    // node.setProperty(TranslateProperty, e)
+    // saveResult(node, e)
 
     false
 
