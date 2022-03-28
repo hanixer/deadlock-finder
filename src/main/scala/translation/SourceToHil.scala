@@ -367,15 +367,44 @@ class Visitor extends ASTVisitor:
       node.setProperty(TranslateProperty, Variable(name, loc))
     else node.setProperty(TranslateProperty, expr)
 
+  override def endVisit(node: ParenthesizedExpression): Unit =
+    val result = getResultSimpleExpr(node.getExpression)
+    node.setProperty(TranslateProperty, result)
+
   override def endVisit(node: JdtAssignment): Unit =
     // Now we support assignment only to a variable,
     // ignoring assignment to an array element or a field.
+    val loc = mkSourceLoc(node)
+
+    def translateOpAssign(op: BinaryOp, name: String): Unit =
+      // Example
+      // a += b
+      // ->
+      // a = a + b
+      // return a
+      val rhs = getResultSimpleExpr(node.getRightHandSide)
+      val variable = Variable(name, loc)
+      val expr = BinaryExpr(op, variable, rhs, loc)
+      addStmt(Assignment(name, expr, loc))
+      node.setProperty(TranslateProperty, variable.copy())
+
     node.getLeftHandSide match
       case sn: SimpleName =>
         val name = sn.getIdentifier
-        val rhs = getResultExpr(node.getRightHandSide)
-        val loc = mkSourceLoc(node)
-        addStmt(Assignment(name, rhs, loc))
+        if node.getOperator == JdtAssignment.Operator.PLUS_ASSIGN then
+          translateOpAssign(BinaryOp.Plus, name)
+        else if node.getOperator == JdtAssignment.Operator.MINUS_ASSIGN then
+          translateOpAssign(BinaryOp.Minus, name)
+        else if node.getOperator == JdtAssignment.Operator.TIMES_ASSIGN then
+          translateOpAssign(BinaryOp.Times, name)
+        else if node.getOperator == JdtAssignment.Operator.DIVIDE_ASSIGN then
+          translateOpAssign(BinaryOp.Divide, name)
+        else if node.getOperator == JdtAssignment.Operator.ASSIGN then
+          val rhs = getResultExpr(node.getRightHandSide)
+          addStmt(Assignment(name, rhs, loc))
+        else
+          val expr = UnsupportedConstruct(loc)
+          node.setProperty(TranslateProperty, expr)
 
   override def visit(node: JdtArrayCreation): Boolean =
     // For now, only arrays of single dimension are supported.
