@@ -1,35 +1,27 @@
 func showcase.Example5.func1(a: int, b: int): void {
   var t~1: int = showcase.Example5.abs(a)
   var c: int = t~1-b
-  loop {
+  while {
     var t~2: int = a+b
     var t~3: int = showcase.Example5.abs(c)
-    var t~4: boolean = t~2<t~3
-    var t~5: boolean = !t~4
-    if (t~5) {
-      break
-    }
+  } (t~2<t~3) {
     c = c-a
     b = b*1
   }
   c = c*2
-  loop {
-    var t~6: int = a+b
-    var t~7: int = showcase.Example5.abs(c)
-    var t~8: boolean = t~6<t~7
-    var t~9: boolean = !t~8
-    if (t~9) {
-      break
-    }
+  while {
+    var t~4: int = a+b
+    var t~5: int = showcase.Example5.abs(c)
+  } (t~4<t~5) {
     c = c-a
   }
 }
 
 func showcase.Example5.abs(x: int): int {
-  var t~10: boolean = x<0
-  if (t~10) {
-    var t~11: int = 0-x
-    return t~11
+  var t~6: boolean = x<0
+  if (t~6) {
+    var t~7: int = 0-x
+    return t~7
   }
   return x
 }

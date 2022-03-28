@@ -62,7 +62,6 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
     if p.isInstanceOf[Expression] && p.getNodeType != ASTNode.ASSIGNMENT then
       true
     else if p.getNodeType == ASTNode.IF_STATEMENT then true
-    else if p.getNodeType == ASTNode.WHILE_STATEMENT then true
     else if p.getNodeType == ASTNode.RETURN_STATEMENT then true
     else false
 
@@ -141,6 +140,9 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
   def popStmtStack(): List[(Stmt, SourceLoc)] =
     stmtsStack.pop().toList
 
+  def popAndGetStmts(): List[Stmt] =
+    popStmtStack().map(_._1)
+
   def addStmt(stmt: Stmt): Unit =
     stmtsStack.top.addOne(stmt, stmt.loc)
 
@@ -215,43 +217,91 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
 
     false
 
-  override def visit(node: WhileStatement): Boolean =
-    pushStmtStack()
+  override def visit(node: ForStatement): Boolean =
+    // Initializer
+    val initializers = node.initializers().asScala.toList.collect { case vde: VariableDeclarationExpression =>
+      vde.accept(this)
+      val typ = translateType(vde.resolveTypeBinding())
+      val frags = vde.fragments().asScala.toList
+      translateDeclFragments(typ, frags)
+    }.flatten
+
     // Condition
-    node.getExpression.accept(this)
-    val cond = getResultSimpleExpr(node.getExpression)
-    val condLoc = mkSourceLoc(node.getExpression)
-    val condNot = UnaryExpr(UnaryOp.Not, cond, condLoc)
-    val condVar =
-      Variable(addTempVar(BooleanType, condLoc, Some(condNot)), condLoc)
-    val breakBlock = Block(List(Break(condLoc)), condLoc)
-    val ifThenElse = IfThenElse(condVar, breakBlock, None, condLoc)
-    addStmt(ifThenElse)
+    pushStmtStack()
+    val expression = node.getExpression
+    expression.accept(this)
+    val cond = getResultExpr(expression)
+    val condLoc = mkSourceLoc(expression)
+    val condStmts = popAndGetStmts()
+    val condBlock = Block(condStmts, condLoc)
 
     // Body
-    val bodyStmts = translateBody(node.getBody)
+    pushStmtStack()
+    val body = node.getBody
+    val bodyLoc = mkSourceLoc(node.getBody)
+    val bodyStmts = translateBody(body)
     bodyStmts.foreach(addStmt) // Add all statements to the current level
+    val stmts = popAndGetStmts()
 
+    // Update
+    pushStmtStack()
+    val updateExpressions = node.updaters().asScala.toList.collect { case e: Expression =>
+      e.accept(this)
+      e
+    }
+    val updateStmts = popAndGetStmts()
+
+    // Make body block, loop and wrapper block, containing initializers
+    val bodyBlock = Block(stmts ++ updateStmts, bodyLoc)
     val loc = mkSourceLoc(node)
+    val loop = WhileLoop(condBlock, cond, bodyBlock, loc)
+    val wrapBlock = Block(initializers :+ loop, loc)
 
-    val stmts = popStmtStack().map(_._1)
-
-    addStmt(Loop(Block(stmts, loc), loc))
+    addStmt(wrapBlock)
 
     false
+
+  override def visit(node: WhileStatement): Boolean =
+    val expression = node.getExpression
+    val body = node.getBody
+
+    // Condition
+    pushStmtStack()
+    expression.accept(this)
+    val cond = getResultExpr(expression)
+    val condLoc = mkSourceLoc(expression)
+    val condStmts = popAndGetStmts()
+
+    val condBlock = Block(condStmts, condLoc)
+    // Body
+    pushStmtStack()
+    val bodyStmts = translateBody(body)
+    bodyStmts.foreach(addStmt) // Add all statements to the current level
+    val stmts = popAndGetStmts()
+    val bodyLoc = mkSourceLoc(node.getBody)
+    val bodyBlock = Block(stmts, bodyLoc)
+    val loc = mkSourceLoc(node)
+
+    val loop = WhileLoop(condBlock, cond, bodyBlock, loc)
+
+    addStmt(loop)
+
+    false
+
+  def translateDeclFragments(typ: Type, fragments: List[Any]): List[VarDecl] =
+    fragments.collect { case frag: VariableDeclarationFragment =>
+      val name = frag.getName.getIdentifier
+      val rhs = Option(frag.getInitializer).map(getResultExpr)
+      val loc = mkSourceLoc(frag)
+      VarDecl(name, typ, rhs, loc)
+    }
 
   override def endVisit(node: VariableDeclarationStatement): Unit =
     val typ = translateType(node.getType)
 
-    val varDecls = node.fragments.asScala.toList.map(f =>
-      val frag = f.asInstanceOf[VariableDeclarationFragment]
-      val name = frag.getName.getIdentifier
-      val rhs = Option(frag.getInitializer).map(getResultExpr)
-      val loc = mkSourceLoc(frag)
-      (VarDecl(name, typ, rhs, loc), loc)
-    )
+    val varDecls = translateDeclFragments(typ, node.fragments.asScala.toList)
 
-    stmtsStack.top.appendAll(varDecls)
+    varDecls.foreach(addStmt)
 
   override def endVisit(node: ReturnStatement): Unit =
     val expr = Option(node.getExpression).map(getResultSimpleExpr)

@@ -57,6 +57,12 @@ case class IfThenElse(
 case class Loop(body: Block, loc: SourceLoc) extends Stmt:
   def prettyPrint: Doc = Doc.text("loop ") + body.prettyPrint
 
+case class WhileLoop(condBlock: Block, condition: Expr, body: Block, loc: SourceLoc) extends Stmt:
+  def prettyPrint: Doc = Doc.text("while ") +
+    (if condBlock.stmts.isEmpty then Doc.empty else condBlock.prettyPrint + Doc.space) +
+    PrettyPrint.inParens(condition.prettyPrint) + Doc.space +
+    body.prettyPrint
+
 case class Block(stmts: List[Stmt], loc: SourceLoc) extends Stmt:
   def prettyPrint: Doc =
     val b = Doc.fill(Doc.line, stmts.map(_.prettyPrint))
