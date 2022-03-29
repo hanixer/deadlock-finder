@@ -43,16 +43,16 @@ case class VarDecl(name: String, t: Type, rhs: Option[Expr], loc: SourceLoc)
 
 case class IfThenElse(
     cond: SimpleExpr,
-    thenStmt: Block, // TODO: rename to thenBlock
-    elseStmt: Option[Block],
+    thenBlock: Block,
+    elseBlock: Option[Block],
     loc: SourceLoc
-) extends Stmt:
+) extends Stmt :
   def prettyPrint: Doc =
-    val elseBranch = elseStmt match
+    val elseBranch = elseBlock match
       case Some(s) => " else " +: s.prettyPrint
-      case _       => Doc.empty
+      case _ => Doc.empty
     val ifCond = ("if (" +: cond.prettyPrint) :+ ") "
-    ifCond + thenStmt.prettyPrint + elseBranch
+    ifCond + thenBlock.prettyPrint + elseBranch
 
 case class Loop(body: Block, loc: SourceLoc) extends Stmt:
   def prettyPrint: Doc = Doc.text("loop ") + body.prettyPrint

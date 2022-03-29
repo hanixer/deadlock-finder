@@ -39,16 +39,16 @@ class HilToLil:
 
     case i: hil.IfThenElse =>
       val thenLabel = mkLabel()
-      val elseLabel = if i.elseStmt.isDefined then mkLabel() else next
+      val elseLabel = if i.elseBlock.isDefined then mkLabel() else next
       finishBlock(CondJump(i.cond, thenLabel, elseLabel, i.loc))
       // Then branch
       startBlock(thenLabel)
-      translateStmt(i.thenStmt, next)
+      translateStmt(i.thenBlock, next)
 
       // Else branch, if present
-      if i.elseStmt.isDefined then
+      if i.elseBlock.isDefined then
         startBlock(elseLabel)
-        translateStmt(i.elseStmt.get, next)
+        translateStmt(i.elseBlock.get, next)
 
     case l: hil.Loop =>
       val isNewBlock = blockStmts.nonEmpty
@@ -136,14 +136,6 @@ class HilToLil:
           else iter(stmts.tail, i + 1)
 
     iter(b.stmts, 0)
-
-  // def translateExpr(hexpr: hil.Expr): Expr = hexpr match
-  //   case i: IntLiteral           => IntLiteral(i.n, i.loc)
-  //   case v: Variable             => Variable(v.name, v.loc)
-  //   case b: BinaryExpr           => BinaryExpr(b.op, b.lhs, b.rhs, b.loc)
-  //   case u: UnaryExpr            => UnaryExpr(u.op, u.e, u.loc)
-  //   case c: CallExpr             => CallExpr(c.name, c.args, c.loc)
-  //   case u: UnsupportedConstruct => UnsupportedConstruct(u.loc)
 
   def isControlStmt(stmt: hil.Stmt): Boolean = stmt match
     case _: hil.IfThenElse => true

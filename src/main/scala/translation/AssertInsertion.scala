@@ -21,14 +21,14 @@ object AssertInsertion:
       val positiveAssert = Assert(ite.cond, ite.cond.loc)
       val negation = UnaryExpr(UnaryOp.Not, ite.cond, ite.cond.loc)
       val negativeAssert = Assert(negation, ite.cond.loc)
-      val thenStmt1 = transformBlock(ite.thenStmt)
-      val thenStmt2 = addStmtOrMakeBlock(thenStmt1, positiveAssert)
-      val elseStmt = ite.elseStmt.map { s =>
+      val thenBlock1 = transformBlock(ite.thenBlock)
+      val thenBlock2 = addStmtOrMakeBlock(thenBlock1, positiveAssert)
+      val elseBlock = ite.elseBlock.map { s =>
         val s1 = transformBlock(s)
         addStmtOrMakeBlock(s1, negativeAssert)
       }.orElse(Some(Block(List(negativeAssert), negativeAssert.loc)))
       
-      ite.copy(thenStmt = thenStmt2, elseStmt = elseStmt)
+      ite.copy(thenBlock = thenBlock2, elseBlock = elseBlock)
       
     case l: Loop =>
       val body = transformBlock(l.body)
