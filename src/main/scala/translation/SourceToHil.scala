@@ -62,6 +62,8 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
     if p.isInstanceOf[Expression] && p.getNodeType != ASTNode.ASSIGNMENT then
       true
     else if p.getNodeType == ASTNode.IF_STATEMENT then true
+    else if p.getNodeType == ASTNode.WHILE_STATEMENT then true
+    else if p.getNodeType == ASTNode.FOR_STATEMENT then true
     else if p.getNodeType == ASTNode.RETURN_STATEMENT then true
     else false
 
@@ -217,6 +219,22 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
 
     false
 
+  def translateLoopCond(expression: Expression): (Block, SimpleExpr) =
+    pushStmtStack()
+    expression.accept(this)
+    val cond = getResultSimpleExpr(expression)
+    val condLoc = mkSourceLoc(expression)
+    val condStmts = popAndGetStmts()
+    val condBlock = Block(condStmts, condLoc)
+    (condBlock, cond)
+
+  def translateLoopBody(body: Statement): List[Stmt] =
+    pushStmtStack()
+    val bodyStmts = translateBody(body)
+    bodyStmts.foreach(addStmt) // Add all statements to the current level
+    val stmts = popAndGetStmts()
+    stmts
+
   override def visit(node: ForStatement): Boolean =
     // Initializer
     val initializers = node.initializers().asScala.toList.collect { case vde: VariableDeclarationExpression =>
@@ -227,21 +245,12 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
     }.flatten
 
     // Condition
-    pushStmtStack()
-    val expression = node.getExpression
-    expression.accept(this)
-    val cond = getResultExpr(expression)
-    val condLoc = mkSourceLoc(expression)
-    val condStmts = popAndGetStmts()
-    val condBlock = Block(condStmts, condLoc)
+    val (condBlock, cond) = translateLoopCond(node.getExpression)
 
     // Body
-    pushStmtStack()
     val body = node.getBody
-    val bodyLoc = mkSourceLoc(node.getBody)
-    val bodyStmts = translateBody(body)
-    bodyStmts.foreach(addStmt) // Add all statements to the current level
-    val stmts = popAndGetStmts()
+    val bodyLoc = mkSourceLoc(body)
+    val bodyStmts = translateLoopBody(body)
 
     // Update
     pushStmtStack()
@@ -252,7 +261,7 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
     val updateStmts = popAndGetStmts()
 
     // Make body block, loop and wrapper block, containing initializers
-    val bodyBlock = Block(stmts ++ updateStmts, bodyLoc)
+    val bodyBlock = Block(bodyStmts ++ updateStmts, bodyLoc)
     val loc = mkSourceLoc(node)
     val loop = WhileLoop(condBlock, cond, bodyBlock, loc)
     val wrapBlock = Block(initializers :+ loop, loc)
@@ -261,24 +270,17 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
 
     false
 
+
   override def visit(node: WhileStatement): Boolean =
     val expression = node.getExpression
-    val body = node.getBody
 
     // Condition
-    pushStmtStack()
-    expression.accept(this)
-    val cond = getResultExpr(expression)
-    val condLoc = mkSourceLoc(expression)
-    val condStmts = popAndGetStmts()
+    val (condBlock, cond) = translateLoopCond(node.getExpression)
 
-    val condBlock = Block(condStmts, condLoc)
     // Body
-    pushStmtStack()
-    val bodyStmts = translateBody(body)
-    bodyStmts.foreach(addStmt) // Add all statements to the current level
-    val stmts = popAndGetStmts()
-    val bodyLoc = mkSourceLoc(node.getBody)
+    val body = node.getBody
+    val bodyLoc = mkSourceLoc(body)
+    val stmts = translateLoopBody(body)
     val bodyBlock = Block(stmts, bodyLoc)
     val loc = mkSourceLoc(node)
 
@@ -510,7 +512,5 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
     // saveResult(node, e)
 
     false
-
-// override def visit(node: Reference): Boolean =
 
 end Visitor

@@ -9,6 +9,8 @@ public class WhileNested {
             if (x == 33)
                 continue;
             while (y > 0) {
+                if (y == 33)
+                    break;
                 a++;
                 y--;
             }

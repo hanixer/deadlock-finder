@@ -13,7 +13,6 @@ class HilToLil:
   private val blockStmts: ListBuffer[Stmt] = ListBuffer()
   private val blocks: ListBuffer[Block] = ListBuffer()
   private var labelCount: Int = 0
-  private var tempCounter: Int = 0
   private var currLabel: String = mkLabel()
   private var isBlockFinished: Boolean = false
   private val loopStack: mutable.Stack[(String, String)] =
@@ -33,9 +32,9 @@ class HilToLil:
       finishBlock(Return(Some(Variable("~retVal", loc)), loc))
     else finishBlock(Return(None, loc))
 
-  def translateStmt(stmt: hil.Stmt, next: String): Unit = stmt match
+  def translateStmt(stmt: hil.Stmt, next: String, noFinalJump: Boolean = false): Unit = stmt match
     case b: hil.Block =>
-      translateBlock(b, next)
+      translateBlock(b, next, noFinalJump)
 
     case i: hil.IfThenElse =>
       val thenLabel = mkLabel()
@@ -73,14 +72,9 @@ class HilToLil:
         startBlock(startLabel)
 
       // Condition
-      translateStmt(wl.condBlock, startLabel)
+      translateStmt(wl.condBlock, startLabel, true)
       val condLoc = wl.condition.loc
-      val tempName = s"wlt~$tempCounter"
-      tempCounter += 1
-      val tempVar = Variable(tempName, condLoc)
-      val tempDecl = VarDecl(tempVar, BooleanType, Some(wl.condition), condLoc)
-      addStmt(tempDecl)
-      val condJump = CondJump(tempVar.copy(), bodyLabel, next, condLoc)
+      val condJump = CondJump(wl.condition, bodyLabel, next, condLoc)
       finishBlock(condJump)
 
       // Body
@@ -112,7 +106,7 @@ class HilToLil:
     case a: hil.Assert =>
       addStmt(Assert(a.expr, a.loc))
 
-  def translateBlock(b: hil.Block, next: String): Unit =
+  def translateBlock(b: hil.Block, next: String, noFinalJump: Boolean = false): Unit =
     val size = b.stmts.length
     @tailrec
     def iter(stmts: List[hil.Stmt], i: Int): Unit =
@@ -130,7 +124,7 @@ class HilToLil:
           translateStmt(stmt, next)
         else
           translateStmt(stmt, next)
-          if isLast && !isBlockFinished then
+          if isLast && !isBlockFinished && !noFinalJump then
             val j = Jump(next, b.loc)
             finishBlock(j)
           else iter(stmts.tail, i + 1)
