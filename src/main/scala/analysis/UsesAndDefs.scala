@@ -40,6 +40,13 @@ class UsesAndDefs(uses: List[Use], defs: List[Def]):
   def getDefiningExpr(v: AbstractVar): Option[Expr] = getDefiningExpr(VarInfo(v))
 
 object UsesAndDefs:
+  def apply(func: FuncDecl): UsesAndDefs =
+    val defsP = funcParamsToDefs(func.params)
+    val defsB = func.body.flatMap(getDefsInBlock)
+    val uses = func.body.flatMap(getUsesInBlock)
+
+    new UsesAndDefs(uses, defsP ++ defsB)
+
   def getUsesInExpr(expr: Expr): List[VarInfo] = expr match
     case b: BinaryExpr  => getUsesInExpr(b.lhs) ++ getUsesInExpr(b.rhs)
     case u: UnaryExpr   => getUsesInExpr(u.e)
@@ -89,13 +96,6 @@ object UsesAndDefs:
     blockParamsToDefs(block.params, block.label) ++ block.stmts.flatMap(
       getDefInStmt
     )
-
-  def apply(func: FuncDecl): UsesAndDefs =
-    val defsP = funcParamsToDefs(func.params)
-    val defsB = func.body.flatMap(getDefsInBlock)
-    val uses = func.body.flatMap(getUsesInBlock)
-
-    new UsesAndDefs(uses, defsP ++ defsB)
 
   def getDefs(func: FuncDecl): List[Def] =
     val defsP = funcParamsToDefs(func.params)

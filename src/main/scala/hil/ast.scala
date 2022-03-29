@@ -43,7 +43,7 @@ case class VarDecl(name: String, t: Type, rhs: Option[Expr], loc: SourceLoc)
 
 case class IfThenElse(
     cond: SimpleExpr,
-    thenStmt: Block,
+    thenStmt: Block, // TODO: rename to thenBlock
     elseStmt: Option[Block],
     loc: SourceLoc
 ) extends Stmt:

@@ -10,6 +10,8 @@ case class Program(funcs: List[FuncDecl], loc: SourceLoc = SourceLoc(1, 1))
     extends AstNode:
   def prettyPrint: Doc =
     Doc.fill(Doc.line + Doc.line, funcs.map(_.prettyPrint))
+  def funcByName(name: String): Option[FuncDecl] =
+    funcs.find(_.name == name)
 
 case class FuncDecl(
     name: String,

@@ -1,7 +1,7 @@
 package deadlockFinder
 package translation
 
-import common.VoidType
+import common.{BooleanType, VoidType}
 import hil.{IfThenElse, Variable}
 import lil.*
 
@@ -10,11 +10,13 @@ import scala.collection.mutable
 import scala.collection.mutable.{ListBuffer, Stack}
 
 class HilToLil:
-  val blockStmts: ListBuffer[Stmt] = ListBuffer()
-  val blocks: ListBuffer[Block] = ListBuffer()
-  var labelCount: Int = 0
-  var currLabel: String = mkLabel()
-  var loopStack: mutable.Stack[(String, String)] =
+  private val blockStmts: ListBuffer[Stmt] = ListBuffer()
+  private val blocks: ListBuffer[Block] = ListBuffer()
+  private var labelCount: Int = 0
+  private var tempCounter: Int = 0
+  private var currLabel: String = mkLabel()
+  private var isBlockFinished: Boolean = false
+  private val loopStack: mutable.Stack[(String, String)] =
     mutable.Stack() // Stack of (loopStart, loopEnd) pairs
 
   def translateFunc(func: hil.FuncDecl): FuncDecl =
@@ -60,6 +62,32 @@ class HilToLil:
       translateStmt(l.body, startLabel)
       loopStack.pop()
 
+    case wl: hil.WhileLoop =>
+      val isNewBlock = blockStmts.nonEmpty
+      val startLabel = if isNewBlock then mkLabel() else currLabel
+      val bodyLabel = mkLabel()
+      loopStack.push((startLabel, next))
+
+      if isNewBlock then
+        finishBlock(Jump(startLabel, wl.loc))
+        startBlock(startLabel)
+
+      // Condition
+      translateStmt(wl.condBlock, startLabel)
+      val condLoc = wl.condition.loc
+      val tempName = s"wlt~$tempCounter"
+      tempCounter += 1
+      val tempVar = Variable(tempName, condLoc)
+      val tempDecl = VarDecl(tempVar, BooleanType, Some(wl.condition), condLoc)
+      addStmt(tempDecl)
+      val condJump = CondJump(tempVar.copy(), bodyLabel, next, condLoc)
+      finishBlock(condJump)
+
+      // Body
+      startBlock(bodyLabel)
+      translateStmt(wl.body, startLabel)
+      loopStack.pop()
+
     case v: hil.VarDecl =>
       addStmt(VarDecl(Variable(v.name, v.loc), v.t, v.rhs, v.loc))
 
@@ -95,13 +123,14 @@ class HilToLil:
           if !isLast then
             val newNext = mkLabel()
             translateStmt(stmt, newNext)
-            currLabel = newNext
+            startBlock(newNext)
             iter(stmts.tail, i + 1)
           else translateStmt(stmt, next)
-        else if isBreakOrContinue(stmt) then translateStmt(stmt, next)
+        else if isBreakOrContinue(stmt) then
+          translateStmt(stmt, next)
         else
           translateStmt(stmt, next)
-          if isLast then
+          if isLast && !isBlockFinished then
             val j = Jump(next, b.loc)
             finishBlock(j)
           else iter(stmts.tail, i + 1)
@@ -119,6 +148,7 @@ class HilToLil:
   def isControlStmt(stmt: hil.Stmt): Boolean = stmt match
     case _: hil.IfThenElse => true
     case _: hil.Loop       => true
+    case _: hil.WhileLoop  => true
     case _                 => false
 
   def isBreakOrContinue(stmt: hil.Stmt): Boolean = stmt match
@@ -133,13 +163,17 @@ class HilToLil:
     if blockStmts.nonEmpty then
       println(s"Start block $label while stmts buffer is not empty")
     currLabel = label
+    isBlockFinished = false
     blockStmts.clear()
 
   def finishBlock(transfer: Transfer): Unit =
+    if isBlockFinished then
+      println(s"Trying to finish block $currLabel, but it was already finished")
     val stmts = blockStmts.toList
     blockStmts.clear
     val block = Block(currLabel, stmts, transfer, transfer.loc)
     blocks.addOne(block)
+    isBlockFinished = true
 
   def mkLabel(): String =
     labelCount += 1

@@ -33,6 +33,11 @@ object AssertInsertion:
     case l: Loop =>
       val body = transformBlock(l.body)
       l.copy(body = body)
+
+    case wl: WhileLoop =>
+      val condBlock = transformBlock(wl.condBlock)
+      val body = transformBlock(wl.body)
+      wl.copy(condBlock = condBlock, body = body)
       
     case b: Block =>
       transformBlock(b)
