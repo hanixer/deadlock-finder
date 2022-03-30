@@ -1,8 +1,9 @@
 package deadlockFinder
 package hil
 
-import translation.SourceToHil
+import translation.{FileHelper, SourceToHil}
 import common.PrettyPrint
+
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.nio.file.{Files, Path}

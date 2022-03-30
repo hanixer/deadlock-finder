@@ -1,46 +1,38 @@
 func showcase.Example4.func1(): void
-entry: 
+entry:
 jump bb1
 
-bb1: 
+bb1:
 var x: int = 6
 var y: int = 3
 jump bb2
 
-bb2: 
+bb2:
 var t~1: boolean = x<100
-var t~2: boolean = !t~1
-condJump t~2 bb4 bb3
+condJump t~1 bb3 end
 
-bb4: 
-jump end
-
-bb3: 
+bb3:
 x = x+1
-var t~3: boolean = y==50
-condJump t~3 bb6 bb5
+var t~2: boolean = y==50
+condJump t~2 bb5 bb4
 
-bb6: 
+bb5:
 jump end
 
-bb5: 
-var t~4: boolean = x>4
-var t~5: boolean = !t~4
-condJump t~5 bb8 bb7
+bb4:
+var t~3: boolean = x>4
+condJump t~3 bb6 bb2
 
-bb8: 
-jump bb2
+bb6:
+var t~4: boolean = y==23
+condJump t~4 bb8 bb7
 
-bb7: 
-var t~6: boolean = y==23
-condJump t~6 bb10 bb9
+bb8:
+jump bb4
 
-bb10: 
-jump bb5
-
-bb9: 
+bb7:
 x = x-1
-jump bb5
+jump bb4
 
-end: 
-return 
+end:
+return

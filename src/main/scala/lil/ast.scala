@@ -50,7 +50,7 @@ case class Block(
     val ps =
       if params.isEmpty then Doc.empty
       else PrettyPrint.inParensAndComma(params.map(_.prettyPrint))
-    Doc.text(label) + ps + Doc.text(": ") + Doc.line +
+    Doc.text(label) + ps + Doc.text(":") + Doc.line +
       Doc.fill(Doc.line, body)
 
 object Block:
@@ -118,7 +118,7 @@ object CondJump:
 
 case class Return(expr: Option[SimpleExpr], loc: SourceLoc) extends Transfer:
   def prettyPrint: Doc =
-    "return " +: expr.map(_.prettyPrint).getOrElse(Doc.empty)
+    "return" +: expr.map(Doc.space + _.prettyPrint).getOrElse(Doc.empty)
 
 case class SsaVariable(name: String, index: Int, loc: SourceLoc) extends AbstractVar:
   def prettyPrint: Doc =

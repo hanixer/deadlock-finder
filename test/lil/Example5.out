@@ -1,23 +1,23 @@
-func showcase.Example2.func1(): void
-entry: 
+func showcase.Example2.func1(c: int): void
+entry:
 jump bb1
 
-bb1: 
+bb1:
 var a: int = 1
 var b: int = 2
 showcase.Example2.func2(a, c)
 jump end
 
-end: 
-return 
+end:
+return
 
 func showcase.Example2.func2(x: int, y: int): void
-entry: 
+entry:
 jump bb1
 
-bb1: 
+bb1:
 x = x-y
 jump end
 
-end: 
-return 
+end:
+return
