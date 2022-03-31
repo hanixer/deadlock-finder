@@ -39,7 +39,7 @@ object ConstantPropagation:
   extension (consts: ConstantsMap)
     def lookup(v: AbstractVar): ConstantAbsVal = lookup(VarInfo(v))
     def lookup(v: VarInfo): ConstantAbsVal = 
-      consts.get(v).getOrElse(ConstantAbsVal.Undefined)
+      consts.getOrElse(v, ConstantAbsVal.Undefined)
 
   def evalBinopInt(op: BinaryOp, n1: Int, n2: Int): ConstantAbsVal = op match
     case BinaryOp.Plus   => ConstantAbsVal.Constant(n1 + n2)
@@ -206,6 +206,18 @@ object ConstantPropagation:
     iter(todo, immediate)
 
   end computeConstants
+
+  def computeConstantsSimplified(func: FuncDecl): Map[String, Int] =
+    val constantsMap = computeConstants(func)
+    // Entries gathered:
+    // - name has only 1 index
+    // - index = 0
+    // - abstract value is constant
+    constantsMap.toList.groupBy(_._1.name)
+      .collect { case (name, (VarInfo(_, Some(0)), ConstantAbsVal.Constant(n)) :: Nil) =>
+            (name, n)
+      }
+
 end ConstantPropagation
 
 // 1. Run all expressions, evaluate immediate constant expression,

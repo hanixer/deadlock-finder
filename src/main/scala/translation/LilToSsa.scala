@@ -3,7 +3,7 @@ package translation
 
 import cfg.{CfgGraph, DominanceFrontiers, Dominators}
 import common.*
-import hil.{AbstractVar, BinaryExpr, CallExpr, Expr, SimpleExpr, UnaryExpr, Variable}
+import hil.{AbstractVar, ArrayCreation, BinaryExpr, CallExpr, Expr, SimpleExpr, UnaryExpr, Variable}
 import lil.*
 
 import scala.annotation.tailrec
@@ -35,7 +35,7 @@ object LilToSsa:
       doms: Dominators
   ): Map[String, List[BlockParam]] =
     val varToDefs = buildVarToDefBlock(func)
-    val varToPhiBlocks = varToDefs.map((v, d) => (v, findPhiForVar(v, d, doms)))
+    val varToPhiBlocks = varToDefs.map((v, d) => (v, findPhiForVar(v, d, doms, func)))
     val resolvedVars = resolveVars(func)
     val pairs =
       cfg.allNodes.map(b =>
@@ -68,22 +68,66 @@ object LilToSsa:
   def findPhiForVar(
       v: String,
       defBlocks: List[String],
-      doms: Dominators
+      doms: Dominators,
+      func: FuncDecl
   ): Set[String] =
     @tailrec
-    def iter(todo: List[String], targets: Set[String]): Set[String] =
+    def iter(todo: List[String], targets: Set[String], seen: Set[String]): Set[String] =
       if todo.nonEmpty then
         val curr = todo.head
-        if targets.contains(curr) then iter(todo.tail, targets)
+        if seen.contains(curr) then iter(todo.tail, targets, seen)
         else
           val frontier = doms.getDominanceFrontier(curr)
           val todo1 =
             if !defBlocks.contains(curr) then todo.tail.appendedAll(frontier)
             else todo.tail
-          iter(todo1, targets + curr)
+          val targets1 =
+            if !isDefinedBeforeUse(v, func.labelToBlock(curr)) then
+              targets + curr
+            else
+              targets
+          iter(todo1, targets1, seen + curr)
       else targets
     val initial = defBlocks.flatMap(b => doms.getDominanceFrontier(b)).distinct
-    iter(initial, Set())
+    iter(initial, Set.empty, Set.empty)
+
+  def isDefinedBeforeUse(variable: String, b: Block): Boolean =
+    def isUsedIn(expr: Expr): Boolean = expr match
+      case b: BinaryExpr => isUsedIn(b.lhs) || isUsedIn(b.rhs)
+      case u: UnaryExpr => isUsedIn(u.e)
+      case c: CallExpr => c.args.exists(isUsedIn)
+      case v: Variable => v.name == variable
+      case a: ArrayCreation => isUsedIn(a.sizeExpr)
+      case _ => false
+
+    @tailrec
+    def loop(stmts: List[Stmt]): Boolean = stmts match
+      case stmt :: rest =>
+        stmt match
+          case a: Assignment =>
+            if isUsedIn(a.rhs) then
+              false
+            else if a.lhs.name == variable then
+              true
+            else
+              loop(rest)
+          case d: VarDecl =>
+            if d.rhs.isDefined then
+              if isUsedIn(d.rhs.get) then
+                false
+              else if d.v.name == variable then
+                true
+              else
+                loop(rest)
+            else
+              loop(rest)
+          case c: CallStmt =>
+            if isUsedIn(c.callExpr) then false
+            else loop(rest)
+          case _ => loop(rest)
+      case Nil => false
+
+    loop(b.stmts)
 
   /** Make a map from a variable name to its declaration info (type, etc.) */
   def resolveVars(func: FuncDecl): Map[String, BlockParam] =
