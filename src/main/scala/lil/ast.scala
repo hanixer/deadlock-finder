@@ -46,7 +46,7 @@ case class Block(
     stmts: List[Stmt],
     transfer: Transfer,
     loc: SourceLoc
-) extends Stmt:
+) extends AstNode:
   def prettyPrint: Doc =
     val body = stmts.map(_.prettyPrint) ++ List(transfer.prettyPrint)
     val ps =
