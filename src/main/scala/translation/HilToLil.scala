@@ -23,7 +23,7 @@ class HilToLil:
     addEndBlock(func)
     val entry = Block("entry", List.empty, Jump(blocks.head.label, func.loc), func.loc)
     blocks.prepend(entry)
-    FuncDecl(func.name, func.params, func.retTyp, blocks.toList, func.loc)
+    FuncDecl(func.name, func.params, func.retTyp, blocks.toList, "entry", "end", func.loc)
 
   def addEndBlock(func: hil.FuncDecl): Unit =
     startBlock("end")

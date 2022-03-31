@@ -14,7 +14,7 @@ object PrettyPrint:
     node.prettyPrint.render(0)
 
   def cfgToDot(cfg: CfgGraph): String =
-    "digraph G {\n" + cfg.allNodes.flatMap(n => cfg.successors(n).map(s => s"$n -> $s")).mkString("\n") + "\n}"
+    "digraph G {\n" + cfg.nodes.flatMap(n => cfg.successors(n).map(s => s"$n -> $s")).mkString("\n") + "\n}"
 
   def funcToDot(func: FuncDecl, cfg: CfgGraph): String =
     val blocks = func.body
@@ -23,7 +23,7 @@ object PrettyPrint:
         s"${b.label} [label=\"${elems.mkString("\n")}\"]"
       }
       .mkString("\n") + "\n"
-    "digraph G {\n" + blocks + cfg.allNodes.flatMap(n => cfg.successors(n).map(s => s"$n -> $s")).mkString("\n") + "\n}"
+    "digraph G {\n" + blocks + cfg.nodes.flatMap(n => cfg.successors(n).map(s => s"$n -> $s")).mkString("\n") + "\n}"
 
   def separateComma(ds: List[Doc]): Doc =
     Doc.fill(Doc.text(", "), ds)

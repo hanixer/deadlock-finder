@@ -18,6 +18,8 @@ case class FuncDecl(
     params: List[Param],
     retTyp: Type,
     body: List[Block],
+    entryLabel: String,
+    exitLabel: String,
     loc: SourceLoc
 ) extends AstNode:
   lazy val labelToBlock: Map[String, Block] =
