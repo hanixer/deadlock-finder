@@ -39,7 +39,7 @@ class UsesAndDefs(uses: List[Use], defs: List[Def]):
 
   def getDefiningExpr(v: AbstractVar): Option[Expr] = getDefiningExpr(VarInfo(v))
 
-  def getDefiningExpr(name: String): Option[Expr] = getDefiningExpr(VarInfo(name, Some(0)))
+  def getInitialDefiningExpr(name: String): Option[Expr] = getDefiningExpr(VarInfo(name, Some(0)))
 
 object UsesAndDefs:
   def apply(func: FuncDecl): UsesAndDefs =

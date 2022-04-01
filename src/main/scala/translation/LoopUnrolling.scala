@@ -8,7 +8,6 @@ import hil.*
 class LoopUnrolling(func: FuncDecl, usesAndDefs: UsesAndDefs, constants: Map[String, Int]):
   def transform(): FuncDecl =
     val body = transformBlock(func.body)
-    usesAndDefs.definingExprs.foreach(println)
     func.copy(body = body)
 
   def transformStmt(stmt: Stmt): Stmt = stmt match
@@ -49,16 +48,15 @@ class LoopUnrolling(func: FuncDecl, usesAndDefs: UsesAndDefs, constants: Map[Str
 
     loop.condition match
       case v: Variable =>
-        usesAndDefs.getDefiningExpr(v.name) match
-          case Some(BinaryExpr(BinaryOp.Less, lv: Variable, IntLiteral(m, _), _)) =>
-            usesAndDefs.getDefiningExpr(lv.name) match
+        usesAndDefs.getInitialDefiningExpr(v.name) match
+          case Some(BinaryExpr(BinaryOp.Less, lv: AbstractVar, IntLiteral(m, _), _)) =>
+            usesAndDefs.getInitialDefiningExpr(lv.name) match
               case Some(IntLiteral(n, _)) =>
                 getChangeAmount(loop.body.stmts, lv).flatMap { change =>
                   unrollLoop(loop.body, n, m - 1, change)
                 }
               case _ => None
           case e =>
-            println(s"Not bin op, but $e")
             None
       case _ => None
 
@@ -68,9 +66,9 @@ class LoopUnrolling(func: FuncDecl, usesAndDefs: UsesAndDefs, constants: Map[Str
       .flatMap(_ => body.stmts)
     Some(stmts)
 
-  def getChangeAmount(stmts: List[Stmt], variable: Variable): Option[Int] =
+  def getChangeAmount(stmts: List[Stmt], variable: AbstractVar): Option[Int] =
     stmts.lastOption match
-      case Some(Assignment(name, BinaryExpr(op, lhs: Variable, IntLiteral(n, _), _), _))
+      case Some(Assignment(name, BinaryExpr(op, lhs: AbstractVar, IntLiteral(n, _), _), _))
         if name == variable.name && lhs.name == variable.name =>
           op match
             case BinaryOp.Plus => Some(n)
