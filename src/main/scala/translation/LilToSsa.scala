@@ -6,36 +6,29 @@ import common.*
 import hil.{AbstractVar, ArrayCreation, BinaryExpr, CallExpr, Expr, SimpleExpr, UnaryExpr, Variable}
 import lil.*
 
+import deadlockFinder.analysis.Liveness
+
 import scala.annotation.tailrec
 import scala.collection.*
 
-object LilToSsa:
-  def apply(prog: Program): Program =
-    val funcs = prog.funcs.map(f => apply(f))
-    prog.copy(funcs = funcs)
+class LilToSsa(initialFunc: FuncDecl):
+  private val cfg = CfgGraph(initialFunc)
+  private val doms = Dominators(cfg)
+  private val liveness = new Liveness(initialFunc)
 
-  def apply(func: FuncDecl): FuncDecl =
-    val cfg = CfgGraph(func)
-    val doms = Dominators(cfg)
+  def transform(): FuncDecl =
     // 1. Place phi-functions (introduce parameters for blocks)
-    val funcWithPhi = placePhi(func, cfg, doms)
+    val funcWithPhi = placePhi(initialFunc)
     // 2. Rename variables
-    renameVariables(funcWithPhi, doms)
+    renameVariables(funcWithPhi)
 
-  case class VarInfo(name: String, typ: Type)
-
-  def placePhi(func: FuncDecl, cfg: CfgGraph, doms: Dominators): FuncDecl =
-    val blockParams = buildBlockToParams(func, cfg, doms)
+  def placePhi(func: FuncDecl): FuncDecl =
+    val blockParams = buildBlockToParams(func)
     addBlockParams(func, blockParams)
 
-  /** Returns a map: block label -> params of that block */
-  def buildBlockToParams(
-      func: FuncDecl,
-      cfg: CfgGraph,
-      doms: Dominators
-  ): Map[String, List[BlockParam]] =
+  def buildBlockToParams(func: FuncDecl): Map[String, List[BlockParam]] =
     val varToDefs = buildVarToDefBlock(func)
-    val varToPhiBlocks = varToDefs.map((v, d) => (v, findPhiForVar(v, d, doms, func)))
+    val varToPhiBlocks = varToDefs.map((v, d) => (v, findPhiForVar(v, d)))
     val resolvedVars = resolveVars(func)
     val pairs =
       cfg.nodes.map(b =>
@@ -65,12 +58,7 @@ object LilToSsa:
     pairs.groupMap(_._1)(_._2)
 
   /** Find all blocks in which the specified must be added as a phi parameter. */
-  def findPhiForVar(
-      v: String,
-      defBlocks: List[String],
-      doms: Dominators,
-      func: FuncDecl
-  ): Set[String] =
+  def findPhiForVar(v: String, defBlocks: List[String]): Set[String] =
     @tailrec
     def iter(todo: List[String], targets: Set[String], seen: Set[String]): Set[String] =
       if todo.nonEmpty then
@@ -82,82 +70,37 @@ object LilToSsa:
             if !defBlocks.contains(curr) then todo.tail.appendedAll(frontier)
             else todo.tail
           val targets1 =
-            if !isDefinedBeforeUse(v, func.labelToBlock(curr)) then
-              targets + curr
-            else
-              targets
+            if liveness.isVariableLiveInBlock(v, curr) then targets + curr
+            else targets
           iter(todo1, targets1, seen + curr)
       else targets
     val initial = defBlocks.flatMap(b => doms.getDominanceFrontier(b)).distinct
     iter(initial, Set.empty, Set.empty)
 
-  def isDefinedBeforeUse(variable: String, b: Block): Boolean =
-    def isUsedIn(expr: Expr): Boolean = expr match
-      case b: BinaryExpr => isUsedIn(b.lhs) || isUsedIn(b.rhs)
-      case u: UnaryExpr => isUsedIn(u.e)
-      case c: CallExpr => c.args.exists(isUsedIn)
-      case v: Variable => v.name == variable
-      case a: ArrayCreation => isUsedIn(a.sizeExpr)
-      case _ => false
-
-    @tailrec
-    def loop(stmts: List[Stmt]): Boolean = stmts match
-      case stmt :: rest =>
-        stmt match
-          case a: Assignment =>
-            if isUsedIn(a.rhs) then
-              false
-            else if a.lhs.name == variable then
-              true
-            else
-              loop(rest)
-          case d: VarDecl =>
-            if d.rhs.isDefined then
-              if isUsedIn(d.rhs.get) then
-                false
-              else if d.v.name == variable then
-                true
-              else
-                loop(rest)
-            else
-              loop(rest)
-          case c: CallStmt =>
-            if isUsedIn(c.callExpr) then false
-            else loop(rest)
-          case _ => loop(rest)
-      case Nil => false
-
-    loop(b.stmts)
-
   /** Make a map from a variable name to its declaration info (type, etc.) */
   def resolveVars(func: FuncDecl): Map[String, BlockParam] =
     val fromBody = func.body.flatMap { b =>
-      b.stmts.flatMap(s =>
+      b.stmts.flatMap { s =>
         s match
           case v: VarDecl => Some((v.v.name, BlockParam(v.v, v.typ)))
           case _          => None
-      )
+      }
     }
     val params = func.params.map(p => (p.name, BlockParam(p)))
     fromBody.appendedAll(params).toMap
 
-  /** Transform a function by adding arguments to jumps and 
-   *  adding parameters to blocks
-   */
-  def addBlockParams(
-      func: FuncDecl,
-      blockParams: Map[String, List[BlockParam]]
-  ): FuncDecl =
+  /** Transform a function by adding arguments to jumps and adding parameters to blocks
+    */
+  def addBlockParams(func: FuncDecl, blockParams: Map[String, List[BlockParam]]): FuncDecl =
     def mkVars(label: String): List[Variable] =
       blockParams(label).map(p => Variable(p.v.name, p.loc))
 
     def transformTransfer(s: Transfer): Transfer = s match
       case j: Jump => j.copy(vars = mkVars(j.label))
       case cj: CondJump =>
-        cj.copy(
-          thenArgs = mkVars(cj.thenLabel),
-          elseArgs = mkVars(cj.elseLabel)
-        )
+        val ta = mkVars(cj.thenLabel)
+        val ea = mkVars(cj.elseLabel)
+        cj.copy(thenArgs = ta, elseArgs = ea)
       case _ => s
 
     def transformBlock(b: Block): Block =
@@ -169,10 +112,7 @@ object LilToSsa:
     func.copy(body = blocks)
 
   /** State for renaming - an immutable environment, and a mutable global map */
-  case class RenameState(
-      env: Map[String, Int],
-      global: mutable.Map[String, Int]
-  ):
+  case class RenameState(env: Map[String, Int], global: mutable.Map[String, Int]):
     def lookup(name: String): Option[Int] = env.get(name)
     def freshVar(v: AbstractVar): (SsaVariable, RenameState) =
       val name = v.name
@@ -185,19 +125,17 @@ object LilToSsa:
       (ssaVar, s)
 
   /** Rename variables in a function declaration */
-  def renameVariables(func: FuncDecl, doms: Dominators): FuncDecl =
+  def renameVariables(func: FuncDecl): FuncDecl =
     def renameAndCollect(
         block: Block,
         state: RenameState,
         acc: List[Block]
     ): List[Block] =
       // Rename variables in current block.
-      val (block1, state1) = renameVariables(block, state, doms)
+      val (block1, state1) = renameVariables(block, state)
       // Recur into children blocks.
       val children = doms.getDomTreeChildren(block.label).map(func.labelToBlock)
-      val childrenRes = children.foldLeft(acc)((acc, childB) =>
-        renameAndCollect(childB, state1, acc)
-      )
+      val childrenRes = children.foldLeft(acc)((acc, childB) => renameAndCollect(childB, state1, acc))
       // Add current.
       block1 :: childrenRes
 
@@ -206,20 +144,15 @@ object LilToSsa:
     val blocks = renameAndCollect(func.body.head, initState, List.empty)
     func.copy(body = blocks)
 
-  /** Rename variables in a block.
-   *  Returns a transformed block and rename state
-   */
-  def renameVariables(
-      block: Block,
-      state: RenameState,
-      doms: Dominators
-  ): (Block, RenameState) =
+  /** Rename variables in a block. Returns a transformed block and rename state
+    */
+  def renameVariables(block: Block, state: RenameState): (Block, RenameState) =
     def handleVariable(v: AbstractVar, state: RenameState): AbstractVar =
       v match
         case v: Variable =>
-          state.lookup(v.name) match 
+          state.lookup(v.name) match
             case Some(index) => SsaVariable(v.name, index, v.loc)
-            case _ => v
+            case _           => v
         case _ => v
 
     def handleSimpleExpr(expr: SimpleExpr, state: RenameState): SimpleExpr =
@@ -294,4 +227,9 @@ object LilToSsa:
       block.copy(stmts = stmts.reverse, transfer = transfer, params = params)
     (block1, state2)
 
-end LilToSsa
+object LilToSsa:
+  def apply(prog: Program): Program =
+    val funcs = prog.funcs.map(f => apply(f))
+    prog.copy(funcs = funcs)
+
+  def apply(func: FuncDecl): FuncDecl = new LilToSsa(func).transform()
