@@ -19,7 +19,6 @@ class OperationGraphBuilder(func: FuncDecl):
   private val seen = mutable.Set.empty[String]
   private val edges = ListBuffer.empty[Edge]
   private val intermediates = mutable.HashMap.empty[String, IntermediateNode]
-  private val callNodes = mutable.HashMap.empty[CallExpr, CallNode]
   private val queue = mutable.Queue.empty[QueueEntry]
 
   def build(): OperationGraph =
@@ -78,29 +77,19 @@ class OperationGraphBuilder(func: FuncDecl):
     case _                                   => None
 
   def tryMakeNodeFromCall(expr: CallExpr, processRank: Option[ProcessRank]): Option[Node] =
-    def update(node: CallNode): Option[CallNode] =
-      callNodes.put(expr, node)
-      Some(node)
-
-    val existing = callNodes.get(expr)
-    if existing.isDefined then existing
-    else
-      processRank match
-        case Some(rank) =>
-          expr.args.lift(5) match
-            case Some(n: IntLiteral) =>
-              if expr.name == "mpi.Comm.Send" then
-                update(new SendNode(rank, n.n))
-              else if expr.name == "mpi.Comm.Recv" then
-                update(new RecvNode(rank, ProcessRank.Concrete(n.n)))
-              else None
-            case Some(StaticFieldAccess("mpi.MPI", "ANY_SOURCE", _)) =>
-              if expr.name == "mpi.Comm.Recv" then
-                update(new RecvNode(rank, ProcessRank.AnyRank))
-              else None
-            case _ =>
-              None
-        case None => None
+    processRank match
+      case Some(rank) =>
+        expr.args.lift(5) match
+          case Some(n: IntLiteral) =>
+            if expr.name == "mpi.Comm.Send" then Some(new SendNode(rank, n.n))
+            else if expr.name == "mpi.Comm.Recv" then Some(new RecvNode(rank, ProcessRank.Concrete(n.n)))
+            else None
+          case Some(StaticFieldAccess("mpi.MPI", "ANY_SOURCE", _)) =>
+            if expr.name == "mpi.Comm.Recv" then Some(new RecvNode(rank, ProcessRank.AnyRank))
+            else None
+          case _ =>
+            None
+      case None => None
 
   def nextLabels(t: Transfer): List[String] = t match
     case j: Jump      => List(j.label)

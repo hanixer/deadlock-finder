@@ -31,9 +31,9 @@ class UsesAndDefs(uses: List[Use], defs: List[Def]):
       case _ => None
     }.toMap
 
-  def getUses(varInfo: VarInfo): Set[Use] = varInfoUseMap(varInfo)
+  def getUsesOfVar(varInfo: VarInfo): Set[Use] = varInfoUseMap.getOrElse(varInfo, Set.empty)
 
-  def getUses(d: Def): Set[Use] = defUseMap(d)
+  def getUsesForDef(d: Def): Set[Use] = defUseMap(d)
 
   def getDefiningExpr(varInfo: VarInfo): Option[Expr] = definingExprs.get(varInfo)
 

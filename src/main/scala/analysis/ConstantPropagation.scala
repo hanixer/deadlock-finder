@@ -186,7 +186,7 @@ object ConstantPropagation:
         if newV != oldV && newV.isLower(oldV) then
           // Add new items to worklist, update constants map.
           val consts1 = consts.updated(d.varInfo, newV)
-          val uses = usesAndDefs.getUses(d)
+          val uses = usesAndDefs.getUsesForDef(d)
           val todo1 = rest ++ uses
           iter(todo1, consts1)
         else
@@ -196,11 +196,11 @@ object ConstantPropagation:
       case _ => consts
 
     val immediate = getImmediateConstants(func)
-    // Initialize worklist by finding uses of immidiate constants.
+    // Initialize worklist by finding uses of immediate constants.
     val todo = immediate
       .filter((_, v) => v.isConstant)
       .keys
-      .flatMap(usesAndDefs.getUses)
+      .flatMap(usesAndDefs.getUsesOfVar)
       .toList
 
     iter(todo, immediate)
