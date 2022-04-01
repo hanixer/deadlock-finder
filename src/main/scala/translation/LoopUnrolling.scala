@@ -53,7 +53,7 @@ class LoopUnrolling(func: FuncDecl, usesAndDefs: UsesAndDefs, constants: Map[Str
             usesAndDefs.getInitialDefiningExpr(lv.name) match
               case Some(IntLiteral(n, _)) =>
                 getChangeAmount(loop.body.stmts, lv).flatMap { change =>
-                  unrollLoop(loop.body, n, m - 1, change)
+                  unrollLoop(loop.body, n, m, change)
                 }
               case _ => None
           case e =>
