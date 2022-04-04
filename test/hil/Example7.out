@@ -1,13 +1,15 @@
 func showcase.Example7.func1(a: int, b: int): void {
   var c: int = 0
-  while (a<b) {
-    var t~1: boolean = a==2
-    if (t~1) {
+  while {
+    var t~1: boolean = a<b
+  } (t~1) {
+    var t~2: boolean = a==2
+    if (t~2) {
       continue
     }
-    var t~2: int = 2*a
-    var t~3: boolean = b==t~2
-    if (t~3) {
+    var t~3: int = 2*a
+    var t~4: boolean = b==t~3
+    if (t~4) {
       break
     }
     c = c-a

@@ -4,24 +4,26 @@ func showcase.Example5.func1(a: int, b: int): void {
   while {
     var t~2: int = a+b
     var t~3: int = showcase.Example5.abs(c)
-  } (t~2<t~3) {
+    var t~4: boolean = t~2<t~3
+  } (t~4) {
     c = c-a
     b = b*1
   }
   c = c*2
   while {
-    var t~4: int = a+b
-    var t~5: int = showcase.Example5.abs(c)
-  } (t~4<t~5) {
+    var t~5: int = a+b
+    var t~6: int = showcase.Example5.abs(c)
+    var t~7: boolean = t~5<t~6
+  } (t~7) {
     c = c-a
   }
 }
 
 func showcase.Example5.abs(x: int): int {
-  var t~6: boolean = x<0
-  if (t~6) {
-    var t~7: int = 0-x
-    return t~7
+  var t~8: boolean = x<0
+  if (t~8) {
+    var t~9: int = 0-x
+    return t~9
   }
   return x
 }

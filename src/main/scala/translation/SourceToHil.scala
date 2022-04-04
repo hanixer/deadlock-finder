@@ -498,6 +498,13 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
       translateVariable(node, binding)
     false
 
+  override def visit(node: BooleanLiteral): Boolean =
+    val b = node.booleanValue()
+    val loc = mkSourceLoc(node)
+    val expr = BoolLiteral(b, loc)
+    saveResult(node, expr)
+    false
+
   override def visit(node: NumberLiteral): Boolean =
     val tb = node.resolveTypeBinding()
     val constExpr = node.resolveConstantExpressionValue()

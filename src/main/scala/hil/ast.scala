@@ -102,6 +102,9 @@ case class StaticFieldAccess(className: String, fieldName: String, loc: SourceLo
 case class IntLiteral(n: Int, loc: SourceLoc) extends SimpleExpr:
   def prettyPrint: Doc = Doc.str(n)
 
+case class BoolLiteral(b: Boolean, loc: SourceLoc) extends SimpleExpr:
+  def prettyPrint: Doc = Doc.str(b)
+
 case class BinaryExpr(
     op: BinaryOp,
     lhs: SimpleExpr,

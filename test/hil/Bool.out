@@ -1,0 +1,7 @@
+func Bool.func1(): void {
+  var b1: boolean = true
+  var b2: boolean = false
+  if (b1) {
+    b2 = true
+  }
+}
