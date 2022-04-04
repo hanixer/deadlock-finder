@@ -9,4 +9,9 @@ object Util:
     val lil = HilToLil(hil)
     val ssa = LilToSsa(lil)
     ssa
+    
+  def fileToLil(path: String): Program =
+    val hil = SourceToHil(JavaParser.parseFile(path))
+    val lil = HilToLil(hil)
+    lil
 

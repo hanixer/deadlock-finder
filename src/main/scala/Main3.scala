@@ -12,7 +12,7 @@ import java.nio.file.{Files, Path}
 
 object Main3:
   def main(args: Array[String]): Unit =
-    val path = "examples/parallel/Loop1.java"
+    val path = "examples/parallel/LoopDeadlock1.java"
     val lil = Util.fileToSsa(path)
     val func = lil.funcs.head
     val cfg = CfgGraph(func)
