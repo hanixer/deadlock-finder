@@ -2,7 +2,7 @@ package deadlockFinder
 package analysis
 
 import cfg.CfgGraph
-import hil.{ArrayCreation, BinaryExpr, CallExpr, Expr, UnaryExpr, Variable}
+import expr.*
 import lil.*
 
 import scala.annotation.tailrec

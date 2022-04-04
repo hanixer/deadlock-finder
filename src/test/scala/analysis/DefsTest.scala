@@ -7,7 +7,7 @@ import deadlockFinder.cfg.CfgGraph
 import deadlockFinder.common.PrettyPrint
 import deadlockFinder.JavaParser
 import deadlockFinder.analysis.{UsesAndDefs, VarInfo}
-import deadlockFinder.hil.IntLiteral
+import expr.*
 
 class DefsTest extends AnyFunSuite:
   test("example 1") {

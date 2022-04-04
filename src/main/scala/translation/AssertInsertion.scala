@@ -1,8 +1,8 @@
 package deadlockFinder
 package translation
 
+import expr.*
 import hil.*
-import common.UnaryOp
 
 /** This pass adds assertion statements to IfThenElse branches.
  *  It will add an assertion even to empty else branches.

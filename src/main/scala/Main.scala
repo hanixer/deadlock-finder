@@ -2,7 +2,6 @@ package deadlockFinder
 
 import cfg.{CfgGraph, Dominators}
 import common.PrettyPrint
-import hil.{Expr, IntLiteral, Variable}
 import translation.{HilToLil, LilToSsa, SourceToHil}
 
 import deadlockFinder.analysis.ConstantPropagation

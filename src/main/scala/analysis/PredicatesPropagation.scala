@@ -1,8 +1,7 @@
 package deadlockFinder
 package analysis
 
-import hil.{AbstractVar, BinaryExpr, CallExpr, Expr, IntLiteral, UnaryExpr}
-import common.{BinaryOp, UnaryOp}
+import expr.*
 import lil.{Assert, Block, FuncDecl, SsaVariable}
 
 import cfg.{CfgGraph, Dominators}

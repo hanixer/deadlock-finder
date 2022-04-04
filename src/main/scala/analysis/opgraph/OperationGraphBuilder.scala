@@ -3,7 +3,7 @@ package analysis.opgraph
 
 import analysis.{PredicatesPropagation, ProcessRank}
 import cfg.CfgGraph
-import hil.{CallExpr, IntLiteral, StaticFieldAccess}
+import expr.*
 import lil.*
 
 import scala.annotation.tailrec

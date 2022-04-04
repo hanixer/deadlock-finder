@@ -1,16 +1,7 @@
 package deadlockFinder
 package analysis
 
-import hil.{
-  AbstractVar,
-  BinaryExpr,
-  CallExpr,
-  Expr,
-  IntLiteral,
-  SimpleExpr,
-  UnaryExpr,
-  Variable
-}
+import expr.*
 import lil.*
 import common.*
 import scala.annotation.tailrec

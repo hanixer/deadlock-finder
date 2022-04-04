@@ -4,7 +4,7 @@ package common
 import analysis.opgraph.OperationGraph
 import analysis.pnet.{Node, PetriNet, Place, Transition}
 import cfg.CfgGraph
-import hil.{AbstractVar, Variable}
+import expr.{AbstractVar, Variable}
 import lil.FuncDecl
 
 import org.typelevel.paiges.Doc

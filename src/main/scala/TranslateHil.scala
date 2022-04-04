@@ -1,6 +1,4 @@
 package deadlockFinder
-
-import hil.{Expr, IntLiteral, Variable}
 import translation.SourceToHil
 
 import org.eclipse.jdt.core.dom.*

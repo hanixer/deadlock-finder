@@ -2,6 +2,7 @@ package deadlockFinder
 package translation
 
 import common.*
+import expr.*
 import hil.*
 
 import org.eclipse.jdt.core.dom.{ArrayCreation as JdtArrayCreation, ArrayType as JdtArrayType, Assignment as JdtAssignment, Block as JdtBlock, Type as JdtType, *}

@@ -3,7 +3,7 @@ package translation
 
 import cfg.{CfgGraph, DominanceFrontiers, Dominators}
 import common.*
-import hil.{AbstractVar, ArrayCreation, BinaryExpr, CallExpr, Expr, SimpleExpr, UnaryExpr, Variable}
+import expr.*
 import lil.*
 
 import deadlockFinder.analysis.Liveness

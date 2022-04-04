@@ -2,7 +2,7 @@ package deadlockFinder
 package translation
 
 import analysis.{ConstantPropagation, UsesAndDefs, VarInfo}
-import common.BinaryOp
+import expr.*
 import hil.*
 
 class LoopUnrolling(func: FuncDecl, usesAndDefs: UsesAndDefs, constants: Map[String, Int]):

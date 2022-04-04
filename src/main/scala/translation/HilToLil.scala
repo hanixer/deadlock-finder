@@ -2,7 +2,7 @@ package deadlockFinder
 package translation
 
 import common.{BooleanType, VoidType}
-import hil.{IfThenElse, Variable}
+import expr.*
 import lil.*
 
 import scala.annotation.tailrec

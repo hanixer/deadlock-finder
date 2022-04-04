@@ -34,7 +34,7 @@ public class Example1 {
     println(PrettyPrint(func))
     assert(cfg.successors("bb1") === List("bb2"))
     assert(cfg.predecessors("bb1") === List("entry"))
-    assert(cfg.successors("bb2") === List("bb4", "bb3"))
-    assert(cfg.predecessors("bb2") === List("bb1", "bb8"))
+    assert(cfg.successors("bb2") === List("bb3", "end"))
+    assert(cfg.predecessors("bb2") === List("bb1", "bb4"))
   }
     

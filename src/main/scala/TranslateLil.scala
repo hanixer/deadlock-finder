@@ -1,6 +1,5 @@
 package deadlockFinder
 
-import hil.{Expr, IntLiteral, Variable}
 import translation.SourceToHil
 import translation.HilToLil
 import common.PrettyPrint

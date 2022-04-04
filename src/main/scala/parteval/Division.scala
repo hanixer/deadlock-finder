@@ -2,8 +2,8 @@ package deadlockFinder
 package parteval
 
 import cfg.CfgGraph
+import expr.*
 import lil.*
-import hil.{ArrayCreation, BinaryExpr, CallExpr, Expr, IntLiteral, UnaryExpr, Variable}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
