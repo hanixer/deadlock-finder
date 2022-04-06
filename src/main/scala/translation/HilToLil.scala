@@ -106,6 +106,11 @@ class HilToLil:
     case a: hil.Assert =>
       addStmt(Assert(a.expr, a.loc))
 
+    case r: hil.Return =>
+      if r.expr.isDefined then
+        addStmt(Assignment(Variable("~retVal", r.loc), r.expr.get, r.loc))
+      finishBlock(Jump("end", r.loc))
+
   def translateBlock(b: hil.Block, next: String, noFinalJump: Boolean = false): Unit =
     val size = b.stmts.length
     @tailrec

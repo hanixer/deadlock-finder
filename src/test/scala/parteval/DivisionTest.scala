@@ -4,7 +4,7 @@ package parteval
 import analysis.{UsesAndDefs, VarInfo}
 import cfg.CfgGraph
 import common.PrettyPrint
-import hil.IntLiteral
+import expr.*
 import parteval.Division
 import translation.{HilToLil, LilToSsa, SourceToHil, Util}
 

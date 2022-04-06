@@ -7,7 +7,7 @@ import deadlockFinder.cfg.CfgGraph
 import deadlockFinder.common.PrettyPrint
 import deadlockFinder.JavaParser
 import deadlockFinder.analysis.{UsesAndDefs, VarInfo}
-import deadlockFinder.hil.IntLiteral
+import deadlockFinder.expr.*
 import deadlockFinder.lil.FuncDecl
 
 class PredicatesPropagationTest extends AnyFunSuite:

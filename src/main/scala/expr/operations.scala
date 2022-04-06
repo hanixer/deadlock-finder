@@ -17,6 +17,21 @@ enum BinaryOp:
     case And           => "&&"
     case Or            => "||"
 
+  def isRelation: Boolean = this match
+    case Less => true
+    case Greater => true
+    case LessEquals => true
+    case GreaterEquals => true
+    case Equals => true
+    case _ => false
+    
+  def isArithmetic: Boolean = this match
+    case Plus => true
+    case Minus => true
+    case Times => true
+    case Divide => true
+    case _ => false
+
 enum UnaryOp:
   case Not
 
