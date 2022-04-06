@@ -10,13 +10,12 @@ import scala.collection.mutable
 import scala.collection.mutable.{ListBuffer, Stack}
 
 class HilToLil:
-  private val blockStmts: ListBuffer[Stmt] = ListBuffer()
-  private val blocks: ListBuffer[Block] = ListBuffer()
+  private val blockStmts = ListBuffer.empty[Stmt]
+  private val blocks = ListBuffer.empty[Block]
   private var labelCount: Int = 0
   private var currLabel: String = mkLabel()
   private var isBlockFinished: Boolean = false
-  private val loopStack: mutable.Stack[(String, String)] =
-    mutable.Stack() // Stack of (loopStart, loopEnd) pairs
+  private val loopStack = mutable.Stack.empty[(String, String)] // Stack of (loopStart, loopEnd) pairs
 
   def translateFunc(func: hil.FuncDecl): FuncDecl =
     translateStmt(func.body, "end")
@@ -49,37 +48,25 @@ class HilToLil:
         startBlock(elseLabel)
         translateStmt(i.elseBlock.get, next)
 
-    case l: hil.Loop =>
-      val isNewBlock = blockStmts.nonEmpty
-      val startLabel = if isNewBlock then mkLabel() else currLabel
-      loopStack.push((startLabel, next))
-
-      if isNewBlock then
-        finishBlock(Jump(startLabel, l.loc))
-        startBlock(startLabel)
-
-      translateStmt(l.body, startLabel)
-      loopStack.pop()
-
     case wl: hil.WhileLoop =>
       val isNewBlock = blockStmts.nonEmpty
-      val startLabel = if isNewBlock then mkLabel() else currLabel
+      val loopStartLabel = if isNewBlock then mkLabel() else currLabel
       val bodyLabel = mkLabel()
-      loopStack.push((startLabel, next))
+      loopStack.push((loopStartLabel, next))
 
       if isNewBlock then
-        finishBlock(Jump(startLabel, wl.loc))
-        startBlock(startLabel)
+        finishBlock(Jump(loopStartLabel, wl.loc))
+        startBlock(loopStartLabel)
 
       // Condition
-      translateStmt(wl.condBlock, startLabel, true)
+      translateStmt(wl.condBlock, loopStartLabel, true)
       val condLoc = wl.condition.loc
       val condJump = CondJump(wl.condition, bodyLabel, next, condLoc)
       finishBlock(condJump)
 
       // Body
       startBlock(bodyLabel)
-      translateStmt(wl.body, startLabel)
+      translateStmt(wl.body, loopStartLabel)
       loopStack.pop()
 
     case v: hil.VarDecl =>
@@ -138,7 +125,6 @@ class HilToLil:
 
   def isControlStmt(stmt: hil.Stmt): Boolean = stmt match
     case _: hil.IfThenElse => true
-    case _: hil.Loop       => true
     case _: hil.WhileLoop  => true
     case _                 => false
 

@@ -55,9 +55,6 @@ case class IfThenElse(
     val ifCond = ("if (" +: cond.prettyPrint) :+ ") "
     ifCond + thenBlock.prettyPrint + elseBranch
 
-case class Loop(body: Block, loc: SourceLoc) extends Stmt:
-  def prettyPrint: Doc = Doc.text("loop ") + body.prettyPrint
-
 case class WhileLoop(condBlock: Block, condition: SimpleExpr, body: Block, loc: SourceLoc) extends Stmt:
   def prettyPrint: Doc = Doc.text("while ") +
     (if condBlock.stmts.isEmpty then Doc.empty else condBlock.prettyPrint + Doc.space) +

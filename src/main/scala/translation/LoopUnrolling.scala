@@ -14,9 +14,6 @@ class LoopUnrolling(func: FuncDecl, usesAndDefs: UsesAndDefs, constants: Map[Str
     case wl: WhileLoop =>
       unrollLoop(wl).map { stmts => Block(stmts, wl.loc) }
         .getOrElse(wl)
-    case l: Loop =>
-      val body = transformBlock(l.body)
-      l.copy(body = body)
     case ite: IfThenElse =>
       val thenS = transformBlock(ite.thenBlock)
       val elseS = ite.elseBlock.map(transformBlock)
