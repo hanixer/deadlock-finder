@@ -12,7 +12,7 @@ import java.nio.file.{Files, Path}
 
 object Main4:
   def main(args: Array[String]): Unit =
-    val path = "examples/showcase/WhileNested.java"
+    val path = "test/lil/Example4.java"
     val hil = SourceToHil(JavaParser.parseFile(path))
     val lil = HilToLil(hil)
     val s = PrettyPrint(lil)
