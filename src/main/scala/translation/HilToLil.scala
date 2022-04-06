@@ -18,10 +18,11 @@ class HilToLil:
   private val loopStack = mutable.Stack.empty[(String, String)] // Stack of (loopStart, loopEnd) pairs
 
   def translateFunc(func: hil.FuncDecl): FuncDecl =
-    translateStmt(func.body, "end")
+    startBlock("entry")
+    translateStmt(func.body)
+    val jumpToEnd = Jump("end", func.loc)
+    finishBlock(jumpToEnd)
     addEndBlock(func)
-    val entry = Block("entry", List.empty, Jump(blocks.head.label, func.loc), func.loc)
-    blocks.prepend(entry)
     FuncDecl(func.name, func.params, func.retTyp, blocks.toList, "entry", "end", func.loc)
 
   def addEndBlock(func: hil.FuncDecl): Unit =
@@ -31,43 +32,57 @@ class HilToLil:
       finishBlock(Return(Some(Variable("~retVal", loc)), loc))
     else finishBlock(Return(None, loc))
 
-  def translateStmt(stmt: hil.Stmt, next: String, noFinalJump: Boolean = false): Unit = stmt match
+  def translateStmt(stmt: hil.Stmt): Unit = stmt match
     case b: hil.Block =>
-      translateBlock(b, next, noFinalJump)
+      for stmt <- b.stmts do
+        translateStmt(stmt)
 
     case i: hil.IfThenElse =>
       val thenLabel = mkLabel()
-      val elseLabel = if i.elseBlock.isDefined then mkLabel() else next
+      val afterLabel = mkLabel()
+      val elseLabel = if i.elseBlock.isDefined then mkLabel() else afterLabel
       finishBlock(CondJump(i.cond, thenLabel, elseLabel, i.loc))
+
       // Then branch
       startBlock(thenLabel)
-      translateStmt(i.thenBlock, next)
+      translateStmt(i.thenBlock)
+      val jumpAfter = Jump(afterLabel, i.thenBlock.loc)
+      finishBlock(jumpAfter)
 
       // Else branch, if present
       if i.elseBlock.isDefined then
         startBlock(elseLabel)
-        translateStmt(i.elseBlock.get, next)
+        translateStmt(i.elseBlock.get)
+        finishBlock(jumpAfter.copy(loc = i.elseBlock.get.loc))
+
+      startBlock(afterLabel)
 
     case wl: hil.WhileLoop =>
       val isNewBlock = blockStmts.nonEmpty
       val loopStartLabel = if isNewBlock then mkLabel() else currLabel
       val bodyLabel = mkLabel()
-      loopStack.push((loopStartLabel, next))
+      val afterLabel = mkLabel()
+      loopStack.push((loopStartLabel, afterLabel))
 
+      // Start new block if needed
       if isNewBlock then
         finishBlock(Jump(loopStartLabel, wl.loc))
         startBlock(loopStartLabel)
 
       // Condition
-      translateStmt(wl.condBlock, loopStartLabel, true)
+      translateStmt(wl.condBlock)
       val condLoc = wl.condition.loc
-      val condJump = CondJump(wl.condition, bodyLabel, next, condLoc)
+      val condJump = CondJump(wl.condition, bodyLabel, afterLabel, condLoc)
       finishBlock(condJump)
 
       // Body
       startBlock(bodyLabel)
-      translateStmt(wl.body, loopStartLabel)
+      translateStmt(wl.body)
+      val jumpBack = Jump(loopStartLabel, wl.loc)
+      finishBlock(jumpBack)
       loopStack.pop()
+
+      startBlock(afterLabel)
 
     case v: hil.VarDecl =>
       addStmt(VarDecl(Variable(v.name, v.loc), v.t, v.rhs, v.loc))
@@ -98,31 +113,6 @@ class HilToLil:
         addStmt(Assignment(Variable("~retVal", r.loc), r.expr.get, r.loc))
       finishBlock(Jump("end", r.loc))
 
-  def translateBlock(b: hil.Block, next: String, noFinalJump: Boolean = false): Unit =
-    val size = b.stmts.length
-    @tailrec
-    def iter(stmts: List[hil.Stmt], i: Int): Unit =
-      if stmts.nonEmpty then
-        val isLast = i == size - 1
-        val stmt = stmts.head
-        if isControlStmt(stmt) then
-          if !isLast then
-            val newNext = mkLabel()
-            translateStmt(stmt, newNext)
-            startBlock(newNext)
-            iter(stmts.tail, i + 1)
-          else translateStmt(stmt, next)
-        else if isBreakOrContinue(stmt) then
-          translateStmt(stmt, next)
-        else
-          translateStmt(stmt, next)
-          if isLast && !isBlockFinished && !noFinalJump then
-            val j = Jump(next, b.loc)
-            finishBlock(j)
-          else iter(stmts.tail, i + 1)
-
-    iter(b.stmts, 0)
-
   def isControlStmt(stmt: hil.Stmt): Boolean = stmt match
     case _: hil.IfThenElse => true
     case _: hil.WhileLoop  => true
@@ -144,13 +134,12 @@ class HilToLil:
     blockStmts.clear()
 
   def finishBlock(transfer: Transfer): Unit =
-    if isBlockFinished then
-      println(s"Trying to finish block $currLabel, but it was already finished")
-    val stmts = blockStmts.toList
-    blockStmts.clear
-    val block = Block(currLabel, stmts, transfer, transfer.loc)
-    blocks.addOne(block)
-    isBlockFinished = true
+    if !isBlockFinished then
+      val stmts = blockStmts.toList
+      blockStmts.clear
+      val block = Block(currLabel, stmts, transfer, transfer.loc)
+      blocks.addOne(block)
+      isBlockFinished = true
 
   def mkLabel(): String =
     labelCount += 1
