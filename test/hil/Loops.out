@@ -3,20 +3,16 @@ func showcase.Loops.func1(a: int, b: int): void {
   while {
     var t~1: boolean = i<5
   } (t~1) {
-    var t~2: int = a
     a = a+1
-    var t~3: int = i
     i = i+1
   }
   {
     var j: int = 0
     var kk: int = 123
     while {
-      var t~4: boolean = j<4
-    } (t~4) {
-      var t~5: int = b
+      var t~2: boolean = j<4
+    } (t~2) {
       b = b-1
-      var t~6: int = j
       j = j+1
     }
   }

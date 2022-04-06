@@ -390,12 +390,22 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
 
     def translate(op: BinaryOp): Unit =
       val operand = getResultSimpleExpr(node.getOperand).asInstanceOf[Variable]
-      val temp = addTempVar(typ, loc, Some(operand))
       val rhs = BinaryExpr(op, operand, IntLiteral(1, loc), loc)
       val asgn = Assignment(operand.name, rhs, loc)
-      addStmt(asgn)
-      val expr = Variable(temp, loc)
-      saveResult(node, expr)
+      val isTempNeeded =
+        node.getParent match
+          case _: VariableDeclarationFragment => true
+          case _: JdtAssignment => true
+          case _: Expression => true
+          case _ => false
+      if isTempNeeded then
+        // We need to create a temp var, because the parent is an expression.
+        val temp = addTempVar(typ, loc, Some(operand))
+        addStmt(asgn)
+        val expr = Variable(temp, loc)
+        saveResult(node, expr)
+      else
+        addStmt(asgn)
 
     if node.getOperator == PostfixExpression.Operator.INCREMENT then
       translate(BinaryOp.Plus)
