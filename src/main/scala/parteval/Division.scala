@@ -43,10 +43,6 @@ class Division(func: FuncDecl):
         if isDynamic(a.rhs, dynamics) then
           dynamics + a.lhs.name
         else dynamics
-      case v: VarDecl =>
-        if v.rhs.isDefined && isDynamic(v.rhs.get, dynamics) then
-          dynamics + v.v.name
-        else dynamics
       case _ => dynamics
     }
 

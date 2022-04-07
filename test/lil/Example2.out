@@ -1,11 +1,11 @@
 func showcase.Example2.func1(): void
 entry:
-var x: int = 6
-var y: int = 3
+x = 6
+y = 3
 jump bb2
 
 bb2:
-var t~1: boolean = x<100
+t~1 = x<100
 condJump t~1 bb3 bb4
 
 bb3:
@@ -13,7 +13,7 @@ x = x+1
 jump bb5
 
 bb5:
-var t~2: boolean = x>4
+t~2 = x>4
 condJump t~2 bb6 bb7
 
 bb6:

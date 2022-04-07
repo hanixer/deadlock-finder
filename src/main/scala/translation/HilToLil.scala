@@ -16,6 +16,7 @@ class HilToLil:
   private var currLabel: String = mkLabel()
   private var isBlockFinished: Boolean = false
   private val loopStack = mutable.Stack.empty[(String, String)] // Stack of (loopStart, loopEnd) pairs
+  private val declarations = ListBuffer.empty[VarDecl]
 
   def translateFunc(func: hil.FuncDecl): FuncDecl =
     startBlock("entry")
@@ -23,7 +24,7 @@ class HilToLil:
     val jumpToEnd = Jump("end", func.loc)
     finishBlock(jumpToEnd)
     addEndBlock(func)
-    FuncDecl(func.name, func.params, func.retTyp, blocks.toList, "entry", "end", func.loc)
+    FuncDecl(func.name, func.params, func.retTyp, declarations.toList, blocks.toList, "entry", "end", func.loc)
 
   def addEndBlock(func: hil.FuncDecl): Unit =
     startBlock("end")
@@ -85,7 +86,9 @@ class HilToLil:
       startBlock(afterLabel)
 
     case v: hil.VarDecl =>
-      addStmt(VarDecl(Variable(v.name, v.loc), v.t, v.rhs, v.loc))
+      declarations.addOne(VarDecl(Variable(v.name, v.loc), v.t, v.loc))
+      if v.rhs.isDefined then
+        addStmt(Assignment(Variable(v.name, v.loc), v.rhs.get, v.loc))
 
     case a: hil.Assignment =>
       addStmt(Assignment(Variable(a.lhs, a.loc), a.rhs, a.loc))

@@ -16,6 +16,7 @@ case class FuncDecl(
     name: String,
     params: List[Param],
     retTyp: Type,
+    declarations: List[VarDecl],
     body: List[Block],
     entryLabel: String,
     exitLabel: String,
@@ -71,13 +72,10 @@ case class Assignment(lhs: AbstractVar, rhs: Expr, loc: SourceLoc) extends Stmt:
   def prettyPrint: Doc = 
     (lhs.prettyPrint :+ " = ") + rhs.prettyPrint
 
-case class VarDecl(v: AbstractVar, typ: Type, rhs: Option[Expr], loc: SourceLoc)
+case class VarDecl(v: AbstractVar, typ: Type, loc: SourceLoc)
     extends Stmt:
   def prettyPrint: Doc =
-    val r = rhs match
-      case Some(e) => " = " +: e.prettyPrint
-      case _       => Doc.empty
-    Doc.text("var ") + v.prettyPrint + Doc.text(": ") + Doc.str(typ) + r
+    Doc.text("var ") + v.prettyPrint + Doc.text(": ") + Doc.str(typ)
 
 case class CallStmt(callExpr: CallExpr) extends Stmt:
   val loc: SourceLoc = callExpr.loc

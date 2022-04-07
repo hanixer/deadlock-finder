@@ -72,7 +72,6 @@ class OperationGraphBuilder(func: FuncDecl):
 
   def tryMakeNodeFromStmt(stmt: Stmt, processRank: Option[ProcessRank]): Option[Node] = stmt match
     case c: CallStmt                         => tryMakeNodeFromCall(c.callExpr, processRank)
-    case VarDecl(_, _, Some(c: CallExpr), _) => tryMakeNodeFromCall(c, processRank)
     case Assignment(_, c: CallExpr, _)       => tryMakeNodeFromCall(c, processRank)
     case _                                   => None
 

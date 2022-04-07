@@ -48,8 +48,6 @@ class LilToSsa(initialFunc: FuncDecl):
       func.body.flatMap { b =>
         b.stmts.flatMap { s =>
           s match
-            case v: VarDecl =>
-              Some(v.v.name, b.label)
             case a: Assignment =>
               Some(a.lhs.name, b.label)
             case _ => None
@@ -79,15 +77,9 @@ class LilToSsa(initialFunc: FuncDecl):
 
   /** Make a map from a variable name to its declaration info (type, etc.) */
   def resolveVars(func: FuncDecl): Map[String, BlockParam] =
-    val fromBody = func.body.flatMap { b =>
-      b.stmts.flatMap { s =>
-        s match
-          case v: VarDecl => Some((v.v.name, BlockParam(v.v, v.typ)))
-          case _          => None
-      }
-    }
+    val declarations = func.declarations.map { v => (v.v.name, BlockParam(v.v, v.typ)) }
     val params = func.params.map(p => (p.name, BlockParam(p)))
-    fromBody.appendedAll(params).toMap
+    declarations.appendedAll(params).toMap
 
   /** Transform a function by adding arguments to jumps and adding parameters to blocks
     */
@@ -189,10 +181,6 @@ class LilToSsa(initialFunc: FuncDecl):
 
     def handleStmt(stmt: Stmt, state: RenameState): (Stmt, RenameState) =
       stmt match
-        case vd: VarDecl =>
-          val (v, state1) = state.freshVar(vd.v)
-          val rhs = vd.rhs.map(e => handleExpr(e, state))
-          (vd.copy(v = v, rhs = rhs), state1)
         case a: Assignment =>
           val (lhs, state1) = state.freshVar(a.lhs)
           val rhs = handleExpr(a.rhs, state)

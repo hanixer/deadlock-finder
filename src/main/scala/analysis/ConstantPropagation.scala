@@ -78,12 +78,6 @@ object ConstantPropagation:
       case _              => ConstantAbsVal.Undefined
 
     def visitStmt(stmt: Stmt): Option[(VarInfo, ConstantAbsVal)] = stmt match
-      case vd: VarDecl =>
-        val vi = VarInfo(vd.v)
-        vd.rhs
-          .map(visitExpr)
-          .map(cv => (vi, cv))
-          .orElse(Some(vi, ConstantAbsVal.Undefined))
       case a: Assignment =>
         val vi = VarInfo(a.lhs)
         Some(vi, visitExpr(a.rhs))
@@ -149,12 +143,6 @@ object ConstantPropagation:
         consts: ConstantsMap
     ): (Def, ConstantAbsVal) =
       use match
-        case vd: Use.VDecl =>
-          val d = Def(vd.decl)
-          val newV = vd.decl.rhs
-            .map(e => evalExpr(e, consts))
-            .getOrElse(ConstantAbsVal.Undefined)
-          (d, newV)
         case a: Use.Assign =>
           val d = Def(a.assign)
           val newV = evalExpr(a.assign.rhs, consts)

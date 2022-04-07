@@ -1,10 +1,10 @@
 func showcase.Example1.func1(): void
 entry:
-var x: int = 6
+x = 6
 jump bb2
 
 bb2:
-var t~1: boolean = x<100
+t~1 = x<100
 condJump t~1 bb3 bb4
 
 bb3:

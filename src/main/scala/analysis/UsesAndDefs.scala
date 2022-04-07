@@ -18,8 +18,6 @@ class UsesAndDefs(uses: List[Use], defs: List[Def]):
 
   val definingExprs: Map[VarInfo, Expr] =
     defs.flatMap { d => d match
-      case Def.VDecl(varInfo, VarDecl(_, _, Some(expr), _)) =>
-        Some(varInfo, expr)
       case Def.Assign(varInfo, Assignment(_, expr, _)) =>
         Some(varInfo, expr)
       case _ => None
@@ -51,9 +49,6 @@ object UsesAndDefs:
     case _              => List.empty
 
   def getUsesInStmt(stmt: Stmt): List[Use] = stmt match
-    case vd: VarDecl =>
-      val varInfos = vd.rhs.map(getUsesInExpr).getOrElse(List.empty)
-      varInfos.map(vi => Use.VDecl(vi, vd))
     case a: Assignment =>
       val varInfos = getUsesInExpr(a.rhs)
       varInfos.map(vi => Use.Assign(vi, a))
@@ -75,7 +70,6 @@ object UsesAndDefs:
     case _ => List.empty
 
   def getDefInStmt(stmt: Stmt): Option[Def] = stmt match
-    case vd: VarDecl   => Some(Def(vd))
     case a: Assignment => Some(Def(a))
     case _             => None
 

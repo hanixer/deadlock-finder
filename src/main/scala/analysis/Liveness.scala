@@ -53,12 +53,10 @@ class Liveness(func: FuncDecl):
 
   def definedVariable(stmt: Stmt): Option[String] = stmt match
     case a: Assignment => Some(a.lhs.name)
-    case v: VarDecl => Some(v.v.name)
     case _ => None
 
   def usedVariables(stmt: Stmt): List[String] = stmt match
     case a: Assignment => usedVariables(a.rhs)
-    case v: VarDecl => v.rhs.map(usedVariables).getOrElse(Nil)
     case a: Assert => usedVariables(a.expr)
     case c: CallStmt => usedVariables(c.callExpr)
     case c: CondJump => usedVariables(c.cond)
