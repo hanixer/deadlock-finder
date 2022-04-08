@@ -4,19 +4,22 @@ import analysis.opgraph.{InsertAdditionalNodes, OperationGraphBuilder}
 import analysis.pnet.PetriNetBuilder
 import cfg.CfgGraph
 import common.PrettyPrint
-import translation.Util
+import translation.{AssertInsertion, HilToLil, LilToSsa, SourceToHil, Util}
 
+import deadlockFinder.analysis.PredicatesPropagation
+import deadlockFinder.parteval.Reduction
 import org.jgrapht.graph.{DefaultDirectedGraph, DefaultEdge}
 
 import java.nio.file.{Files, Path}
 
 object Main3:
   def main(args: Array[String]): Unit =
-    val path = "examples/parallel/LoopDeadlock1.java"
-    val lil = Util.fileToSsa(path)
-    val func = lil.funcs.head
+    val path = "examples/parallel/LoopRemaining.java"
+    val hil = AssertInsertion((SourceToHil(JavaParser.parseFile(path))))
+    val lil = (HilToLil(hil))
+    val func = LilToSsa(new Reduction(lil.funcs.head).transform())
     val cfg = CfgGraph(func)
-    print(PrettyPrint(lil))
+//    print(PrettyPrint(lil))
     Files.writeString(Path.of("target/cfgBig.dot"), PrettyPrint.funcToDot(func, cfg))
     Files.writeString(Path.of("target/cfg.dot"), PrettyPrint.cfgToDot(cfg))
     val operationGraph = OperationGraphBuilder(func)

@@ -32,8 +32,8 @@ class OperationGraphBuilder(func: FuncDecl):
   private def processEntry(entry: QueueEntry) =
     val prevRank = entry.rank
     val currRank = processRanks.get(entry.label)
-    val isRankChanged =
-      prevRank.isDefined && prevRank != currRank && prevRank.get.isInstanceOf[ProcessRank.Concrete]
+    val isRankChanged = prevRank != currRank
+//      prevRank.isDefined && prevRank != currRank && prevRank.get.isInstanceOf[ProcessRank.Concrete]
 
     // Create new intermediate node if needed.
     val pred1 = createIntermediateIfNeeded(entry, isRankChanged)
@@ -47,6 +47,7 @@ class OperationGraphBuilder(func: FuncDecl):
 
     if !seen(entry.label) then
       val next = nextLabels(block.transfer).map { QueueEntry(_, pred2, currRank) }
+      println(s"curr: ${entry.label} ==> $next")
       queue ++= next
 
     seen += entry.label

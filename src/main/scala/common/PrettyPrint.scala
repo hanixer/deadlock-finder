@@ -20,7 +20,7 @@ object PrettyPrint:
     val blocks = func.body
       .map { b =>
         val elems = b.label :: b.stmts.map(PrettyPrint.apply).appended(PrettyPrint(b.transfer))
-        s"${b.label} [label=\"${elems.mkString("\n")}\"]"
+        s"${b.label} [label=\"${elems.mkString("\n")}\";shape=box]"
       }
       .mkString("\n") + "\n"
     "digraph G {\n" + blocks + cfg.nodes.flatMap(n => cfg.successors(n).map(s => s"$n -> $s")).mkString("\n") + "\n}"
