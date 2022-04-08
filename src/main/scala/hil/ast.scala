@@ -83,4 +83,4 @@ case class CallStmt(callExpr: CallExpr) extends Stmt:
     (callExpr.name + "(") +: (args :+ ")")
 
 case class UnsupportedConstruct(loc: SourceLoc) extends SimpleExpr, Stmt:
-  def prettyPrint: Doc = Doc.text(s"[unsupported stmt or expr at $loc]")
+  def prettyPrint: Doc = Doc.text(s"[?stmt/expr:(${loc.line}, ${loc.column})]")

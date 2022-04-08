@@ -20,6 +20,7 @@ class OperationGraphBuilder(func: FuncDecl):
   private val edges = ListBuffer.empty[Edge]
   private val intermediates = mutable.HashMap.empty[String, IntermediateNode]
   private val queue = mutable.Queue.empty[QueueEntry]
+  private val lastCallNodeForLabel = mutable.Map.empty[String, Node]
 
   def build(): OperationGraph =
     val root = new IntermediateNode(cfg.entry)
@@ -31,45 +32,40 @@ class OperationGraphBuilder(func: FuncDecl):
 
   private def processEntry(entry: QueueEntry) =
     val prevRank = entry.rank
-    val currRank = processRanks.get(entry.label)
-    val isRankChanged = prevRank != currRank
-//      prevRank.isDefined && prevRank != currRank && prevRank.get.isInstanceOf[ProcessRank.Concrete]
+    val currLabel = entry.label
+    val node = entry.node
+    val currRank = processRanks.get(currLabel)
 
     // Create new intermediate node if needed.
-    val pred1 = createIntermediateIfNeeded(entry, isRankChanged)
-
-    if isRankChanged then edges += ((entry.node, pred1))
-
-    val block = func.labelToBlock(entry.label)
+    val needIntermediate = cfg.predecessors(currLabel).lengthCompare(1) > 0
+    val node1 =
+      if needIntermediate then
+        val node1 = intermediates.getOrElseUpdate(currLabel, new IntermediateNode(currLabel))
+        edges += ((node, node1))
+        node1
+      else node
 
     // Handle statements.
-    val pred2 = handleStmts(block.stmts, pred1, currRank)
+    val block = func.labelToBlock(currLabel)
+    val node2 = handleStmts(block, node1, currRank)
 
-    if !seen(entry.label) then
-      val next = nextLabels(block.transfer).map { QueueEntry(_, pred2, currRank) }
-      println(s"curr: ${entry.label} ==> $next")
+    if !seen(currLabel) then
+      val next = nextLabels(block.transfer).map { QueueEntry(_, node2, currRank) }
       queue ++= next
 
-    seen += entry.label
+    seen += currLabel
 
-  private def createIntermediateIfNeeded(entry: QueueEntry, isRankChanged: Boolean) =
-    if isRankChanged then
-      if !intermediates.contains(entry.label) then
-        val node = new IntermediateNode(entry.label)
-        intermediates.put(entry.label, node)
-        node
-      else intermediates(entry.label)
-    else entry.node
-
-  def handleStmts(stmts: List[Stmt], pred: Node, processRank: Option[ProcessRank]): Node =
-    stmts.foldLeft(pred) { (pred, stmt) =>
-      tryMakeNodeFromStmt(stmt, processRank) match
-        case Some(node) =>
-          edges += ((pred, node))
-          node
-        case _ =>
-          pred
-    }
+  def handleStmts(block: Block, pred: Node, processRank: Option[ProcessRank]): Node =
+    def makeNode() =
+      block.stmts.foldLeft(pred) { (pred, stmt) =>
+        tryMakeNodeFromStmt(stmt, processRank) match
+          case Some(node) =>
+            edges += ((pred, node))
+            node
+          case _ =>
+            pred
+      }
+    lastCallNodeForLabel.getOrElseUpdate(block.label, makeNode())
 
   def tryMakeNodeFromStmt(stmt: Stmt, processRank: Option[ProcessRank]): Option[Node] = stmt match
     case c: CallStmt                         => tryMakeNodeFromCall(c.callExpr, processRank)

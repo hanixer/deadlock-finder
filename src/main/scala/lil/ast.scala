@@ -80,8 +80,7 @@ case class VarDecl(v: AbstractVar, typ: Type, loc: SourceLoc)
 case class CallStmt(callExpr: CallExpr) extends Stmt:
   val loc: SourceLoc = callExpr.loc
   def prettyPrint: Doc =
-    val args = PrettyPrint.inParensAndComma(callExpr.args.map(_.prettyPrint))    
-    callExpr.name +: args
+    callExpr.prettyPrint
 
 trait Transfer extends Stmt
 

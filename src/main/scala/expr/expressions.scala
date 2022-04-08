@@ -37,8 +37,8 @@ case class UnaryExpr(op: UnaryOp, e: SimpleExpr, loc: SourceLoc) extends Expr:
 
 case class CallExpr(name: String, args: List[SimpleExpr], loc: SourceLoc) extends Expr:
   def prettyPrint: Doc =
-    val a = PrettyPrint.separateComma(args.map(_.prettyPrint))
-    Doc.str(name) + ("(" +: a :+ ")")
+    val a = PrettyPrint.inParensAndComma(args.map(_.prettyPrint))
+    Doc.text(name)
 
 case class ArrayCreation(sizeExpr: SimpleExpr, elementType: Type, loc: SourceLoc) extends Expr:
   override def prettyPrint: Doc =

@@ -15,11 +15,10 @@ import java.nio.file.{Files, Path}
 object Main3:
   def main(args: Array[String]): Unit =
     val path = "examples/parallel/LoopRemaining.java"
-    val hil = AssertInsertion((SourceToHil(JavaParser.parseFile(path))))
-    val lil = (HilToLil(hil))
+    val hil = AssertInsertion(SourceToHil(JavaParser.parseFile(path)))
+    val lil = HilToLil(hil)
     val func = LilToSsa(new Reduction(lil.funcs.head).transform())
     val cfg = CfgGraph(func)
-//    print(PrettyPrint(lil))
     Files.writeString(Path.of("target/cfgBig.dot"), PrettyPrint.funcToDot(func, cfg))
     Files.writeString(Path.of("target/cfg.dot"), PrettyPrint.cfgToDot(cfg))
     val operationGraph = OperationGraphBuilder(func)
