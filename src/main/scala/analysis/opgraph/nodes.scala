@@ -16,7 +16,7 @@ class MergeNode(val label: String = "") extends Node:
   
 trait CallNode extends Node
 
-class SendNode(val caller: ProcessRank, val callee: Int) extends CallNode:
+class SendNode(val caller: ProcessRank, val callee: Int, val isSendSource: Boolean = false) extends CallNode:
   override def toString: String = s"Send $caller => $callee"
 
 class RecvNode(val caller: ProcessRank, val callee: ProcessRank) extends CallNode:

@@ -5,7 +5,10 @@ import common.*
 import expr.*
 import hil.*
 
-import org.eclipse.jdt.core.dom.{ArrayCreation as JdtArrayCreation, ArrayType as JdtArrayType, Assignment as JdtAssignment, Block as JdtBlock, Type as JdtType, *}
+import org.eclipse.jdt.core.dom.{
+  ArrayCreation as JdtArrayCreation, ArrayType as JdtArrayType,
+  Assignment as JdtAssignment, Block as JdtBlock, Type as JdtType, FieldAccess as JdtFieldAccess, *
+}
 
 import javax.swing.tree.TreePath
 import scala.collection.mutable
@@ -500,10 +503,22 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
     false
 
   override def visit(node: QualifiedName): Boolean =
-    translateVariable(node)
+    node.resolveBinding() match
+      case binding: IVariableBinding =>
+        val static = Modifier.isStatic(binding.getModifiers)
+        if binding.isField && !static then
+          node.getQualifier.accept(this)
+          val loc = mkSourceLoc(node)
+          val instance = getResultSimpleExpr(node.getQualifier)
+          val name = node.getName.getIdentifier
+          val field = FieldAccess(instance, name, loc)
+          saveResult(node, field)
+        else
+          translateVariable(node, binding)
+      case _ =>
     false
 
-  override def visit(node: FieldAccess): Boolean =
+  override def visit(node: JdtFieldAccess): Boolean =
     val binding = node.resolveFieldBinding()
     if binding != null then
       translateVariable(node, binding)

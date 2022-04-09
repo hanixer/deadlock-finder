@@ -83,6 +83,11 @@ class OperationGraphBuilder(func: FuncDecl):
           case Some(StaticFieldAccess("mpi.MPI", "ANY_SOURCE", _)) =>
             if expr.name == "mpi.Comm.Recv" then Some(new RecvNode(rank, ProcessRank.AnyRank))
             else None
+          case Some(FieldAccess(_, "source", _)) =>
+            if expr.name == "mpi.Comm.Send" then
+              Some(new SendNode(rank, -1, true))
+            else
+              None
           case _ =>
             None
       case None => None

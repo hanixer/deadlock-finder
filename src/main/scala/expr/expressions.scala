@@ -18,6 +18,9 @@ case class Variable(name: String, loc: SourceLoc) extends AbstractVar:
 case class StaticFieldAccess(className: String, fieldName: String, loc: SourceLoc) extends SimpleExpr:
   def prettyPrint: Doc = Doc.text(s"$className.$fieldName")
 
+case class FieldAccess(instance: SimpleExpr, fieldName: String, loc: SourceLoc) extends SimpleExpr:
+  def prettyPrint: Doc = instance.prettyPrint + Doc.text(s".$fieldName")
+
 case class IntLiteral(n: Int, loc: SourceLoc) extends SimpleExpr:
   def prettyPrint: Doc = Doc.str(n)
 

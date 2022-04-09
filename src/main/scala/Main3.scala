@@ -14,7 +14,7 @@ import java.nio.file.{Files, Path}
 
 object Main3:
   def main(args: Array[String]): Unit =
-    val path = "examples/parallel/LoopRemaining.java"
+    val path = args(0)
     val hil = AssertInsertion(SourceToHil(JavaParser.parseFile(path)))
     val lil = HilToLil(hil)
     val func = LilToSsa(new Reduction(lil.funcs.head).transform())
