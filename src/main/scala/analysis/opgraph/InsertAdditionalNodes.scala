@@ -39,6 +39,7 @@ object InsertAdditionalNodes:
   private def makeProcessNodePair(n: Node) =
     n match
       case s: SendNode => Some(s.caller, n)
+      case s: MemoSendNode => Some(s.caller, n)
       case r: RecvNode => Some(r.caller, n)
       case _ => None
 

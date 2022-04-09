@@ -85,7 +85,7 @@ class OperationGraphBuilder(func: FuncDecl):
             else None
           case Some(FieldAccess(_, "source", _)) =>
             if expr.name == "mpi.Comm.Send" then
-              Some(new SendNode(rank, -1, true))
+              Some(new MemoSendNode(rank))
             else
               None
           case _ =>
