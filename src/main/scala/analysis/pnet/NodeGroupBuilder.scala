@@ -6,11 +6,10 @@ import analysis.opgraph.{CallNode, OperationGraph, RecvNode, SendNode}
 
 /** Builds groups for nodes of operation graph. */
 class NodeGroupBuilder(operationGraph: OperationGraph):
-  private val allNodes = operationGraph.nodes
-
-  private val callNodes = allNodes.collect { case n: CallNode => n }
-
   type Gates = Map[ProcessRank, Map[ProcessRank, NodeGate]]
+
+  private val allNodes = operationGraph.nodes
+  private val callNodes = allNodes.collect { case n: CallNode => n }
 
   private val senderReceiverPairs =
     callNodes.map { n => n match
@@ -31,10 +30,10 @@ class NodeGroupBuilder(operationGraph: OperationGraph):
       .groupMap(_._1)(_._2)
       .map { (k, v) => (k, v.toMap) }
 
-  private val receiverGates: Map[ProcessRank, Map[ProcessRank, NodeGate]] =
+  private val receiverGates: Gates =
     makeGates(true)
 
-  private val senderGates: Map[ProcessRank, Map[ProcessRank, NodeGate]] =
+  private val senderGates: Gates =
     makeGates(false)
 
   val innerEdges: List[Edge] =

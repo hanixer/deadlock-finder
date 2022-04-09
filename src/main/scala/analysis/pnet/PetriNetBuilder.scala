@@ -20,8 +20,6 @@ class PetriNetBuilder(operationGraph: OperationGraph):
 
   private val edges = ListBuffer.empty[Edge]
   private val queue = Queue.empty[(OGNode, Transition)]
-  private val groups = HashMap.empty[GroupInfo, NodeGroup]
-  private val groupsAnyRecv = HashMap.empty[ProcessRank, NodeGroup]
   private val transitions = HashMap.empty[OGNode, Transition]
   private val mergePlaces = HashMap.empty[MergeNode, Place]
   private val seen = Set.empty[OGNode]
