@@ -1,7 +1,7 @@
 package deadlockFinder
 package translation
 
-import common.{BooleanType, VoidType}
+import common.{BooleanType, NameCounter, VoidType}
 import expr.*
 import lil.*
 
@@ -12,7 +12,7 @@ import scala.collection.mutable.{ListBuffer, Stack}
 class HilToLil:
   private val blockStmts = ListBuffer.empty[Stmt]
   private val blocks = ListBuffer.empty[Block]
-  private var labelCount: Int = 0
+  private val nameCounter = new NameCounter("bb")
   private var currLabel: String = mkLabel()
   private var isBlockFinished: Boolean = false
   private val loopStack = mutable.Stack.empty[(String, String)] // Stack of (loopStart, loopEnd) pairs
@@ -144,9 +144,7 @@ class HilToLil:
       blocks.addOne(block)
       isBlockFinished = true
 
-  def mkLabel(): String =
-    labelCount += 1
-    s"bb$labelCount"
+  def mkLabel(): String = nameCounter.newName()
 
 object HilToLil:
   def apply(hprog: hil.Program): Program =

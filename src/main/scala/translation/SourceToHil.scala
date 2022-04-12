@@ -29,7 +29,7 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
   private val funcs = ListBuffer[FuncDecl]()
   private val stmtsStack: mutable.Stack[ListBuffer[(Stmt, SourceLoc)]] =
     mutable.Stack()
-  private var tempCounter = 0
+  private val nameCounter = new NameCounter
 
   def start(): Unit = compilationUnit.accept(this)
 
@@ -135,8 +135,7 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
       translateVariable(node, binding.asInstanceOf[IVariableBinding])
 
   def addTempVar(typ: Type, loc: SourceLoc, rhs: Option[Expr] = None): String =
-    tempCounter += 1
-    val name = s"t~$tempCounter"
+    val name = nameCounter.newName()
     addStmt(VarDecl(name, typ, rhs, loc))
     name
 

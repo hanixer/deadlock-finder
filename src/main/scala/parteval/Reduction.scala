@@ -4,8 +4,9 @@ package parteval
 import expr.*
 import lil.*
 import cfg.CfgGraph
+import common.NameCounter
+import common.SourceLoc
 
-import deadlockFinder.common.SourceLoc
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -24,7 +25,7 @@ class Reduction(func: FuncDecl):
   private val stmts = ListBuffer.empty[Stmt]
   private var store: Store = Map.empty[String, Value]
   private val queue = mutable.Queue.empty[LabelAndStore]
-  private var counter = 0
+  private val nameCounter = new NameCounter
   private val newLabels = mutable.Map.empty[LabelAndStore, String]
 
   def transform(): FuncDecl =
@@ -181,7 +182,6 @@ class Reduction(func: FuncDecl):
     newLabels.get(ls) match
       case Some(label) => label
       case None =>
-        counter = counter + 1
-        val label = s"${ls.label}_$counter"
+        val label = nameCounter.newName(ls.label)
         newLabels.put(ls, label)
         label
