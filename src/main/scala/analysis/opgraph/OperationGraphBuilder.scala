@@ -12,13 +12,13 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 class OperationGraphBuilder(func: FuncDecl):
-  case class QueueEntry(label: String, node: Node, rank: Option[ProcessRank])
+  case class QueueEntry(label: String, node: Node)
 
   type LabelAndRank = (String, Option[ProcessRank])
 
   private val cfg: CfgGraph = CfgGraph(func)
   private val processRanks = PredicatesPropagation.propagate(func)
-  private val seen = mutable.Set.empty[LabelAndRank]
+  private val seen = mutable.Set.empty[String]
   private val edges = ListBuffer.empty[Edge]
   private val intermediates = mutable.HashMap.empty[String, IntermediateNode]
   private val queue = mutable.Queue.empty[QueueEntry]
@@ -26,21 +26,14 @@ class OperationGraphBuilder(func: FuncDecl):
 
   def build(): OperationGraph =
     val root = new IntermediateNode(cfg.entry)
-    queue += QueueEntry(cfg.entry, root, None)
+    queue += QueueEntry(cfg.entry, root)
 
     while queue.nonEmpty do processEntry(queue.dequeue())
 
     new OperationGraph(root, edges.toList)
 
   private def processEntry(entry: QueueEntry) =
-    processRanks.get(entry.label) match
-      case None => processRank(entry, None)
-      case Some(ranks) =>
-        ranks.map(r => Some(ProcessRank.Concrete(r))).foreach(processRank(entry, _))
-
-  private def processRank(entry: QueueEntry, currRank: Option[ProcessRank]) =
-    // Create new intermediate node if needed.
-    val prevRank = entry.rank
+    val ranks = processRanks.getOrElse(entry.label, List.empty)
     val currLabel = entry.label
     val node = entry.node
     val needIntermediate = cfg.predecessors(currLabel).lengthCompare(1) > 0
@@ -51,32 +44,41 @@ class OperationGraphBuilder(func: FuncDecl):
         node1
       else node
 
-    // Handle statements.
     val block = func.labelToBlock(currLabel)
-    val node2 = handleStmts(block, node1, currRank)
+    if ranks.isEmpty then
+      queueNext(currLabel, block, node1, false)
+    else
+      // Handle statements for each rank.
+      for rank <- ranks do
+        val (node2, callNodeCreated) = handleStmts(block, node1, ProcessRank.Concrete(rank))
+        queueNext(currLabel, block, node2, callNodeCreated)
 
-    val labelRank = (currLabel, currRank)
-    if !seen(labelRank) then
-      val next = nextLabels(block.transfer).map(QueueEntry(_, node2, currRank))
+  private def queueNext(currLabel: String, block: Block, node: Node, callNodeCreated: Boolean) =
+    if seen.add(currLabel) || callNodeCreated then
+      val next = nextLabels(block.transfer).map(QueueEntry(_, node))
       queue ++= next
 
-    seen += labelRank
-
-  def handleStmts(block: Block, pred: Node, processRank: Option[ProcessRank]): Node =
-    processRank match
-      case Some(rank) =>
-        def makeNode() =
-          block.stmts.foldLeft(pred) { (pred, stmt) =>
-            tryMakeNodeFromStmt(stmt, rank) match
-              case Some(node) =>
-                edges += ((pred, node))
-                node
-              case _ =>
-                pred
-          }
-        val labelRank = (block.label, Some(rank))
-        lastCallNodeForLabel.getOrElseUpdate(labelRank, makeNode())
-      case None => pred
+  /** If (label, rank) combination was not seen yet, try to create call nodes from statements
+    * of the given block.
+    * Returns a node and a boolean flag. If the flag is true then call nodes were created during
+    * the current call, otherwise false.*/
+  def handleStmts(block: Block, pred: Node, rank: ProcessRank): (Node, Boolean) =
+    def makeNode() =
+      block.stmts.foldLeft(pred) { (pred, stmt) =>
+        tryMakeNodeFromStmt(stmt, rank) match
+          case Some(node) =>
+            edges += ((pred, node))
+            node
+          case _ =>
+            pred
+      }
+    val labelRank = (block.label, Some(rank))
+    lastCallNodeForLabel.get(labelRank) match
+      case None =>
+        val node = makeNode()
+        lastCallNodeForLabel.put(labelRank, node)
+        (node, node != pred)
+      case Some(node) => (node, false)
 
   def tryMakeNodeFromStmt(stmt: Stmt, processRank: ProcessRank): Option[Node] = stmt match
     case c: CallStmt                         => tryMakeNodeFromCall(c.callExpr, processRank)

@@ -1,7 +1,7 @@
 package deadlockFinder
 package common
 
-import analysis.opgraph.OperationGraph
+import analysis.opgraph.{MergeNode, OperationGraph, SplitNode}
 import analysis.pnet.{Node, PetriNet, Place, Transition}
 import cfg.CfgGraph
 import expr.{AbstractVar, Variable}
@@ -40,7 +40,13 @@ object PrettyPrint:
 
   def operationGraphToDot(operationGraph: OperationGraph): String =
     val nodeToIndex = operationGraph.nodes.zipWithIndex.toMap
-    val labels = nodeToIndex.toList.map { (n, i) => s"$i [label=\"$n\"]" }
+    val labels = nodeToIndex.toList.map { (n, i) =>
+      val shape = n match
+        case _: MergeNode => "oval"
+        case _: SplitNode => "oval"
+        case _ => "box"
+      s"$i [label=\"$n\";shape=$shape]"
+    }
     val edges = operationGraph.edges.map { (n1, n2) =>
       val i1 = nodeToIndex(n1)
       val i2 = nodeToIndex(n2)

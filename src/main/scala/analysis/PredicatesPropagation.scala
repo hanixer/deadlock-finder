@@ -13,7 +13,7 @@ object PredicatesPropagation:
 
   /** Returns a map from block name to process rank. For some block there may be no entry.
     */
-  def propagate(func: FuncDecl, processCount: Int = 5): Map[String, List[Int]] =
+  def propagate(func: FuncDecl, processCount: Int = 3): Map[String, List[Int]] =
     val usesAndDefs = UsesAndDefs(func)
     val cfg = CfgGraph(func)
     val dominators = Dominators(cfg)
