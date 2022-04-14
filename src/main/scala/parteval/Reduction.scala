@@ -175,6 +175,7 @@ class Reduction(func: FuncDecl):
       case BinaryOp.LessEquals => lhs <= rhs
       case BinaryOp.GreaterEquals => lhs >= rhs
       case BinaryOp.Equals => lhs == rhs
+      case BinaryOp.NotEquals => lhs != rhs
       case _ => throw new Exception(s"Wrong operation $op, expected relation op")
     Value.Bool(v)
 

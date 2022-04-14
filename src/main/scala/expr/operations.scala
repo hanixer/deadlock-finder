@@ -2,7 +2,7 @@ package deadlockFinder
 package expr
 
 enum BinaryOp:
-  case Plus, Minus, Times, Divide, Less, Greater, LessEquals, GreaterEquals, Equals, And, Or
+  case Plus, Minus, Times, Divide, Less, Greater, LessEquals, GreaterEquals, Equals, NotEquals, And, Or
 
   override def toString: String = this match
     case Plus          => "+"
@@ -14,23 +14,25 @@ enum BinaryOp:
     case LessEquals    => "<="
     case GreaterEquals => ">="
     case Equals        => "=="
+    case NotEquals     => "!="
     case And           => "&&"
     case Or            => "||"
 
   def isRelation: Boolean = this match
-    case Less => true
-    case Greater => true
-    case LessEquals => true
+    case Less          => true
+    case Greater       => true
+    case LessEquals    => true
     case GreaterEquals => true
-    case Equals => true
-    case _ => false
-    
+    case Equals        => true
+    case NotEquals     => true
+    case _             => false
+
   def isArithmetic: Boolean = this match
-    case Plus => true
-    case Minus => true
-    case Times => true
+    case Plus   => true
+    case Minus  => true
+    case Times  => true
     case Divide => true
-    case _ => false
+    case _      => false
 
 enum UnaryOp:
   case Not

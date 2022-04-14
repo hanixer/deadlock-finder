@@ -73,6 +73,9 @@ object PredicatesPropagation:
       case BinaryExpr(BinaryOp.Equals, lhs, n: IntLiteral, _) if isRankCall(lhs, usesAndDefs) =>
         Some(Predicate(n.n, true))
 
+      case BinaryExpr(BinaryOp.NotEquals, lhs, n: IntLiteral, _) if isRankCall(lhs, usesAndDefs) =>
+        Some(Predicate(n.n, false))
+
       case _ => None
 
   /** Returns true if a variable contains value of Rank() call or it is a Rank() call expression.

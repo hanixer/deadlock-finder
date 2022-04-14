@@ -93,17 +93,18 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
       VoidType
 
   def translateOperator(op: InfixExpression.Operator): BinaryOp = op match
-    case InfixExpression.Operator.PLUS           => BinaryOp.Plus
-    case InfixExpression.Operator.MINUS          => BinaryOp.Minus
-    case InfixExpression.Operator.TIMES          => BinaryOp.Times
-    case InfixExpression.Operator.DIVIDE         => BinaryOp.Divide
-    case InfixExpression.Operator.LESS           => BinaryOp.Less
-    case InfixExpression.Operator.GREATER        => BinaryOp.Greater
-    case InfixExpression.Operator.LESS_EQUALS    => BinaryOp.LessEquals
+    case InfixExpression.Operator.PLUS => BinaryOp.Plus
+    case InfixExpression.Operator.MINUS => BinaryOp.Minus
+    case InfixExpression.Operator.TIMES => BinaryOp.Times
+    case InfixExpression.Operator.DIVIDE => BinaryOp.Divide
+    case InfixExpression.Operator.LESS => BinaryOp.Less
+    case InfixExpression.Operator.GREATER => BinaryOp.Greater
+    case InfixExpression.Operator.LESS_EQUALS => BinaryOp.LessEquals
     case InfixExpression.Operator.GREATER_EQUALS => BinaryOp.GreaterEquals
-    case InfixExpression.Operator.EQUALS         => BinaryOp.Equals
-    case InfixExpression.Operator.AND            => BinaryOp.And
-    case InfixExpression.Operator.OR             => BinaryOp.Or
+    case InfixExpression.Operator.EQUALS => BinaryOp.Equals
+    case InfixExpression.Operator.NOT_EQUALS => BinaryOp.NotEquals
+    case InfixExpression.Operator.AND => BinaryOp.And
+    case InfixExpression.Operator.OR => BinaryOp.Or
     case _ =>
       println("Unknown operator: $op")
       BinaryOp.Plus
