@@ -19,9 +19,15 @@ object AssertInsertion:
   private def transformStmt(stmt: Stmt): Stmt = stmt match
     case ite: IfThenElse =>
       val positiveAssert = Assert(ite.cond, ite.cond.loc)
+      val negation = UnaryExpr(UnaryOp.Not, ite.cond, ite.cond.loc)
+      val negativeAssert = Assert(negation, ite.cond.loc)
       val thenBlock1 = transformBlock(ite.thenBlock)
       val thenBlock2 = addStmtOrMakeBlock(thenBlock1, positiveAssert)
-      val elseBlock = ite.elseBlock.map(transformBlock)
+      val elseBlock = ite.elseBlock.map { s =>
+        val s1 = transformBlock(s)
+        addStmtOrMakeBlock(s1, negativeAssert)
+      }.orElse(Some(Block(List(negativeAssert), negativeAssert.loc)))
+      
       ite.copy(thenBlock = thenBlock2, elseBlock = elseBlock)
       
     case wl: WhileLoop =>
