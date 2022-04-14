@@ -182,6 +182,6 @@ class Reduction(func: FuncDecl):
     newLabels.get(ls) match
       case Some(label) => label
       case None =>
-        val label = nameCounter.newName(ls.label)
+        val label = nameCounter.newName(ls.label + "_")
         newLabels.put(ls, label)
         label

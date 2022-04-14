@@ -9,7 +9,7 @@ import deadlockFinder.common.PrettyPrint
 import deadlockFinder.JavaParser
 
 class AssertInsertionTest extends AnyFunSuite:
-  test("example 2") {
+  test("MPI calls") {
     val source = """
 public class Example2 {
     static void func1() {
@@ -47,7 +47,7 @@ public class Example2 {
     println(pretty)
     assert(pretty === expected)
   }
-  test("example 1") {
+  test("while loop") {
     val source = """
 public class Example1 {
     static void func1() {
