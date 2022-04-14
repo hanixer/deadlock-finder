@@ -12,7 +12,7 @@ import scala.collection.mutable.{ListBuffer, Stack}
 class HilToLil:
   private val blockStmts = ListBuffer.empty[Stmt]
   private val blocks = ListBuffer.empty[Block]
-  private val nameCounter = new NameCounter("bb")
+  private val nameCounter = new NameCounter(prefix = "bb")
   private var currLabel: String = mkLabel()
   private var isBlockFinished: Boolean = false
   private val loopStack = mutable.Stack.empty[(String, String)] // Stack of (loopStart, loopEnd) pairs

@@ -19,17 +19,17 @@ import scala.jdk.CollectionConverters.*
   * (High-level intermediate language)
   */
 object SourceToHil:
+  val nameCounter = new NameCounter
   def apply(cu: CompilationUnit): Program =
     val visitor = new Visitor(cu)
     visitor.start()
-    Program(visitor.getFuncs)
+    Program(visitor.getFuncs, nameCounter.counter)
 
 class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
   private val TranslateProperty = "Translate"
   private val funcs = ListBuffer[FuncDecl]()
   private val stmtsStack: mutable.Stack[ListBuffer[(Stmt, SourceLoc)]] =
     mutable.Stack()
-  private val nameCounter = new NameCounter
 
   def start(): Unit = compilationUnit.accept(this)
 
@@ -135,7 +135,7 @@ class Visitor(compilationUnit: CompilationUnit) extends ASTVisitor:
       translateVariable(node, binding.asInstanceOf[IVariableBinding])
 
   def addTempVar(typ: Type, loc: SourceLoc, rhs: Option[Expr] = None): String =
-    val name = nameCounter.newName()
+    val name = SourceToHil.nameCounter.newName()
     addStmt(VarDecl(name, typ, rhs, loc))
     name
 

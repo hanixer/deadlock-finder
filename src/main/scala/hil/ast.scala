@@ -6,8 +6,7 @@ import expr.*
 
 import org.typelevel.paiges.Doc
 
-case class Program(funcs: List[FuncDecl], loc: SourceLoc = SourceLoc(1, 1))
-    extends AstNode:
+case class Program(funcs: List[FuncDecl], tempCounter: Int, loc: SourceLoc = SourceLoc(1, 1)) extends AstNode:
   def prettyPrint: Doc =
     Doc.fill(Doc.line + Doc.line, funcs.map(_.prettyPrint))
 
@@ -34,12 +33,11 @@ case class Assert(expr: Expr, loc: SourceLoc) extends Stmt:
 case class Assignment(lhs: String, rhs: Expr, loc: SourceLoc) extends Stmt:
   def prettyPrint: Doc = (lhs + " = ") +: rhs.prettyPrint
 
-case class VarDecl(name: String, t: Type, rhs: Option[Expr], loc: SourceLoc)
-    extends Stmt:
+case class VarDecl(name: String, t: Type, rhs: Option[Expr], loc: SourceLoc) extends Stmt:
   def prettyPrint: Doc =
     val r = rhs match
       case Some(e) => " = " +: e.prettyPrint
-      case _ => Doc.empty
+      case _       => Doc.empty
     ("var " + name + ": ") +: (Doc.str(t) + r)
 
 case class IfThenElse(
@@ -47,11 +45,11 @@ case class IfThenElse(
     thenBlock: Block,
     elseBlock: Option[Block],
     loc: SourceLoc
-) extends Stmt :
+) extends Stmt:
   def prettyPrint: Doc =
     val elseBranch = elseBlock match
       case Some(s) => " else " +: s.prettyPrint
-      case _ => Doc.empty
+      case _       => Doc.empty
     val ifCond = ("if (" +: cond.prettyPrint) :+ ") "
     ifCond + thenBlock.prettyPrint + elseBranch
 
