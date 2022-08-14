@@ -4,9 +4,9 @@ import analysis.opgraph.{InsertAdditionalNodes, OperationGraphBuilder}
 import analysis.pnet.PetriNetBuilder
 import cfg.CfgGraph
 import common.PrettyPrint
+import parteval.Reduction
 import translation.{LoopUnrolling, SourceToHil, Util}
 
-import deadlockFinder.parteval.Reduction
 import org.jgrapht.graph.{DefaultDirectedGraph, DefaultEdge}
 
 import java.nio.file.{Files, Path}

@@ -1,13 +1,13 @@
 package deadlockFinder
 
+import analysis.PredicatesPropagation
 import analysis.opgraph.{InsertAdditionalNodes, OperationGraphBuilder}
 import analysis.pnet.PetriNetBuilder
 import cfg.CfgGraph
 import common.PrettyPrint
-import translation.{AssertInsertion, HilToLil, LilToSsa, SourceToHil, Util}
+import parteval.Reduction
+import translation.*
 
-import deadlockFinder.analysis.PredicatesPropagation
-import deadlockFinder.parteval.Reduction
 import org.jgrapht.graph.{DefaultDirectedGraph, DefaultEdge}
 
 import java.nio.file.{Files, Path}
