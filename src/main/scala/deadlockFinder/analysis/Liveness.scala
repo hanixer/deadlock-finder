@@ -34,7 +34,7 @@ class Liveness(func: FuncDecl):
             case Some(_) =>
               loop(rest, liveMap)
             case None =>
-              loop(rest ++ predecessors, liveMap.updated(label, Set.empty))
+              loop(rest ++ predecessors, liveMap.updated(label, newLive))
         case _ => liveMap
 
     loop(Queue(cfg.exit), Map.empty)

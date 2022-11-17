@@ -11,28 +11,23 @@ import deadlockFinder.expr.*
 
 class LivenessTest extends AnyFunSuite:
   test("example 1") {
-    val path = "examples/showcase/ForLoop.java"
+    val path = "examples/showcase/Example6_1.java"
     val hil = SourceToHil(JavaParser.parseFile(path))
     val lil = HilToLil(hil)
     val func = lil.funcs.head
     val liveness = new Liveness(func)
     println(PrettyPrint(func))
-    assert(liveness.isVariableLiveInBlock("i", "entry") === false)
-    assert(liveness.isVariableLiveInBlock("i", "bb1") === false)
-    assert(liveness.isVariableLiveInBlock("i", "bb2") === true)
-    assert(liveness.isVariableLiveInBlock("i", "end") === false)
-    assert(liveness.isVariableLiveInBlock("a", "entry") === true)
-    assert(liveness.isVariableLiveInBlock("a", "bb1") === true)
-    assert(liveness.isVariableLiveInBlock("a", "bb2") === true)
-    assert(liveness.isVariableLiveInBlock("a", "bb3") === true)
-    assert(liveness.isVariableLiveInBlock("a", "end") === false)
-    assert(liveness.isVariableLiveInBlock("t~1", "bb1") === false)
-    assert(liveness.isVariableLiveInBlock("t~1", "bb2") === false)
-    assert(liveness.isVariableLiveInBlock("t~1", "bb3") === false)
-    assert(liveness.isVariableLiveInBlock("t~1", "end") === false)
-    assert(liveness.isVariableLiveInBlock("t~2", "bb1") === false)
-    assert(liveness.isVariableLiveInBlock("t~2", "bb2") === false)
-    assert(liveness.isVariableLiveInBlock("t~2", "bb3") === false)
-    assert(liveness.isVariableLiveInBlock("t~2", "end") === false)
+    assert(!liveness.isVariableLiveInBlock("x", "end"))
+    assert(!liveness.isVariableLiveInBlock("y", "end"))
+    assert(!liveness.isVariableLiveInBlock("z", "end"))
+    assert(liveness.isVariableLiveInBlock("x", "bb4"))
+    assert(liveness.isVariableLiveInBlock("y", "bb4"))
+    assert(!liveness.isVariableLiveInBlock("z", "bb4"))
+    assert(liveness.isVariableLiveInBlock("x", "bb2"))
+    assert(liveness.isVariableLiveInBlock("y", "bb2"))
+    assert(!liveness.isVariableLiveInBlock("z", "bb2"))
+    assert(!liveness.isVariableLiveInBlock("x", "entry"))
+    assert(!liveness.isVariableLiveInBlock("y", "entry"))
+    assert(!liveness.isVariableLiveInBlock("z", "entry"))
   }
     
