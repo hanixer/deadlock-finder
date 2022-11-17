@@ -2,7 +2,6 @@ package deadlockFinder
 package cfg
 
 import scala.collection.mutable
-import javax.lang.model.element.ModuleElement.DirectiveKind
 import scala.annotation.tailrec
 
 type DominanceFrontiers = Map[String, Set[String]]
@@ -106,7 +105,6 @@ object Dominators:
     val df = mutable.Map[String, mutable.Set[String]]()
     for node <- cfg.nodes do df(node) = mutable.Set()
 
-    val doms = findImmediateDominators(cfg)
     val joins = cfg.nodes.filter(n => cfg.predecessors(n).length > 1)
 
     @tailrec
@@ -116,7 +114,8 @@ object Dominators:
         walkUpDoms(join, idom, doms(curr))
 
     for join <- joins do
-      for pred <- cfg.predecessors(join) do walkUpDoms(join, doms(join), pred)
+      for pred <- cfg.predecessors(join) do
+        walkUpDoms(join, doms(join), pred)
 
     df.map((k, v) => (k, v.toSet)).toMap
 

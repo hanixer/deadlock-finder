@@ -19,7 +19,10 @@ object PrettyPrint:
   def funcToDot(func: FuncDecl, cfg: CfgGraph): String =
     val blocks = func.body
       .map { b =>
-        val elems = b.label :: b.stmts.map(PrettyPrint.apply).appended(PrettyPrint(b.transfer))
+        val params =
+          if b.params.isEmpty then ""
+          else "(" + b.params.map(p => PrettyPrint(p.v)).mkString(",") + ")"
+        val elems = b.label + params :: b.stmts.map(PrettyPrint.apply).appended(PrettyPrint(b.transfer))
         s"${b.label} [label=\"${elems.mkString("\n")}\";shape=box]"
       }
       .mkString("\n") + "\n"

@@ -1,4 +1,3 @@
-
 package mpi.corrbench;
 import mpi.MPI;
 
