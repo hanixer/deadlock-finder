@@ -2,34 +2,26 @@ package deadlockFinder
 package analysis.pnet
 
 import analysis.ProcessRank
-import analysis.opgraph.{
-  CallNode,
-  IntermediateNode,
-  MergeNode,
-  OperationGraph,
-  RecvNode,
-  SendNode,
-  SplitNode,
-  Node as OGNode
-}
+import analysis.opgraph.{CallNode, IntermediateNode, MergeNode, OperationGraph, RecvNode, SendNode, SplitNode, Node as OGNode}
 
+import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, HashMap, ListBuffer, Queue, Set}
 
 class PetriNetBuilder(operationGraph: OperationGraph):
   case class QueueEntry(from: Node, to: Node, transition: Transition)
 
   private val edges = ListBuffer.empty[Edge]
-  private val queue = Queue.empty[(OGNode, Transition)]
-  private val transitions = HashMap.empty[OGNode, Transition]
-  private val mergePlaces = HashMap.empty[MergeNode, Place]
-  private val seen = Set.empty[OGNode]
+  private val queue = mutable.Queue.empty[(OGNode, Transition)]
+  private val transitions = mutable.HashMap.empty[OGNode, Transition]
+  private val mergePlaces = mutable.HashMap.empty[MergeNode, Place]
+  private val seen = mutable.Set.empty[OGNode]
   private val groupsBuilder = new NodeGroupBuilder(operationGraph)
+  private val firstP = new Place
 
   def build(): PetriNet =
     // Add inner edges for all groups
     edges ++= groupsBuilder.innerEdges
 
-    val firstP = new Place
     val firstT = new Transition
     addEdge(firstP, firstT)
     queue += ((operationGraph.root, firstT))
@@ -41,8 +33,6 @@ class PetriNetBuilder(operationGraph: OperationGraph):
     new PetriNet(firstP, edges.toList)
 
   private def processEntry(ognode: OGNode, prevTran: Transition): Unit =
-    val isSeen = seen(ognode)
-
     ognode match
       case curr: CallNode         => processCallNode(prevTran, curr)
       case curr: SplitNode        => processSplitNode(prevTran, curr)
@@ -105,7 +95,12 @@ class PetriNetBuilder(operationGraph: OperationGraph):
     if !seen(curr) then
       val newP = new Place
       val successors = operationGraph.successors(curr)
-      if successors.isEmpty then addEdge(prevTran, newP)
+      if successors.isEmpty then
+        assert(curr == operationGraph.exit, "Operation graph node with no successors should be the exit node")
+        val newT = new Transition
+        addEdge(prevTran, newP)
+        addEdge(newP, newT)
+        addEdge(newT, firstP)
       else
         for next <- successors do
           next match
