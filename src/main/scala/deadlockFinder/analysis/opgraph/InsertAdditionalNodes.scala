@@ -23,8 +23,6 @@ object InsertAdditionalNodes:
           toAdd += ((curr, node))
         else
           val node = new MergeNode
-          val d = nodes.map { n => (n, curr) }
-          val a = nodes.map { n => (n, node) }
           toDelete ++= nodes.map { n => (n, curr) }
           toAdd ++= nodes.map { n => (n, node) }
           toAdd += ((node, curr))
@@ -42,4 +40,3 @@ object InsertAdditionalNodes:
       case s: MemoSendNode => Some(s.caller, n)
       case r: RecvNode => Some(r.caller, n)
       case _ => None
-
