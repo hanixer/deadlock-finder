@@ -28,7 +28,8 @@ class OperationGraphBuilder(func: FuncDecl):
     val root = new IntermediateNode(cfg.entry)
     queue += QueueEntry(cfg.entry, root)
 
-    while queue.nonEmpty do processEntry(queue.dequeue())
+    while queue.nonEmpty do
+      processEntry(queue.dequeue())
 
     new OperationGraph(root, edges.toList)
 
@@ -39,9 +40,9 @@ class OperationGraphBuilder(func: FuncDecl):
     val needIntermediate = cfg.predecessors(currLabel).lengthCompare(1) > 0
     val node1 =
       if needIntermediate then
-        val node1 = intermediates.getOrElseUpdate(currLabel, new IntermediateNode(currLabel))
-        edges += ((node, node1))
-        node1
+        val intermediate = intermediates.getOrElseUpdate(currLabel, new IntermediateNode(currLabel))
+        edges += ((node, intermediate))
+        intermediate
       else node
 
     val block = func.labelToBlock(currLabel)
