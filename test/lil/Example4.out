@@ -5,24 +5,24 @@ y = 3
 jump bb2
 
 bb2:
-t~1 = x<100
-condJump t~1 bb3 bb4
+t~36 = x<100
+condJump t~36 bb3 bb4
 
 bb3:
 x = x+1
-t~2 = y==50
-condJump t~2 bb5 bb6
+t~37 = y==50
+condJump t~37 bb5 bb6
 
 bb5:
 jump bb4
 
 bb6:
-t~3 = x>4
-condJump t~3 bb7 bb8
+t~38 = x>4
+condJump t~38 bb7 bb8
 
 bb7:
-t~4 = y==23
-condJump t~4 bb9 bb10
+t~39 = y==23
+condJump t~39 bb9 bb10
 
 bb9:
 jump bb6

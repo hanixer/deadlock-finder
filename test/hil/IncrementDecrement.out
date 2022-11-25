@@ -3,19 +3,19 @@ func IncrementDecrement.func1(a: int, b: int): void {
   var x: int = b+a
   b = b-1
   var x1: int = b+a
-  var t~1: int = a
+  var t~59: int = a
   a = a+1
-  var x3: int = t~1
-  var t~2: int = a
+  var x3: int = t~59
+  var t~60: int = a
   a = a-1
-  var x4: int = t~2
+  var x4: int = t~60
   b = b-1
   var x5: int = b
   b = b+1
   var x6: int = b
-  var t~3: int = b
+  var t~61: int = b
   b = b+1
-  var y: int = t~3
+  var y: int = t~61
   a = a-1
   var z: int = a
 }

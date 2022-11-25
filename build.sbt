@@ -16,3 +16,4 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9" % Test
 libraryDependencies += "org.jgrapht" % "jgrapht-core" % "1.5.1"
 
 Compile / run / mainClass := Some("deadlockFinder.Main")
+assembly / mainClass := Some("deadlockFinder.Main")

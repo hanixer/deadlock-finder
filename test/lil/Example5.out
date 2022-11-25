@@ -2,7 +2,7 @@ func showcase.Example2.func1(c: int): void
 entry:
 a = 1
 b = 2
-showcase.Example2.func2(a, c)
+showcase.Example2.func2
 jump end
 
 end:

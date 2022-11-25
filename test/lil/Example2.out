@@ -5,16 +5,16 @@ y = 3
 jump bb2
 
 bb2:
-t~1 = x<100
-condJump t~1 bb3 bb4
+t~27 = x<100
+condJump t~27 bb3 bb4
 
 bb3:
 x = x+1
 jump bb5
 
 bb5:
-t~2 = x>4
-condJump t~2 bb6 bb7
+t~28 = x>4
+condJump t~28 bb6 bb7
 
 bb6:
 x = x-1

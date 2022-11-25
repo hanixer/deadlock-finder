@@ -1,8 +1,8 @@
 func showcase.Loops.func1(a: int, b: int): void {
   var i: int = 0
   while {
-    var t~1: boolean = i<5
-  } (t~1) {
+    var t~63: boolean = i<5
+  } (t~63) {
     a = a+1
     i = i+1
   }
@@ -10,8 +10,8 @@ func showcase.Loops.func1(a: int, b: int): void {
     var j: int = 0
     var kk: int = 123
     while {
-      var t~2: boolean = j<4
-    } (t~2) {
+      var t~64: boolean = j<4
+    } (t~64) {
       b = b-1
       j = j+1
     }

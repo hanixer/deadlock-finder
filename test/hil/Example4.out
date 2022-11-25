@@ -1,14 +1,14 @@
 func showcase.Example4.func1(a: int, b: int): void {
-  var t~1: int = showcase.Example4.abs(a)
-  var c: int = t~1-b
+  var t~40: int = showcase.Example4.abs
+  var c: int = t~40-b
   c = c+c
 }
 
 func showcase.Example4.abs(x: int): int {
-  var t~2: boolean = x<0
-  if (t~2) {
-    var t~3: int = 0-x
-    return t~3
+  var t~41: boolean = x<0
+  if (t~41) {
+    var t~42: int = 0-x
+    return t~42
   }
   return x
 }

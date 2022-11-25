@@ -1,18 +1,18 @@
 func showcase.Example3.func1(a: int, b: int): void {
-  var t~1: boolean = a<b
-  if (t~1) {
+  var t~29: boolean = a<b
+  if (t~29) {
     var c: int = a+b
     a = c-b
   } else {
     var c1: int = a-b
     a = c1+b
   }
-  var t~2: boolean = a>=b
-  if (t~2) {
+  var t~33: boolean = a>=b
+  if (t~33) {
     var d: int = a-b
     a = d-a
-    var t~3: boolean = d<=a
-    if (t~3) {
+    var t~35: boolean = d<=a
+    if (t~35) {
       a = a+a
     }
   }

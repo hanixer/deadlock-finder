@@ -4,20 +4,20 @@ c = 0
 jump bb2
 
 bb2:
-t~1 = a<b
-condJump t~1 bb3 bb4
+t~30 = a<b
+condJump t~30 bb3 bb4
 
 bb3:
-t~2 = a==2
-condJump t~2 bb5 bb6
+t~31 = a==2
+condJump t~31 bb5 bb6
 
 bb5:
 jump bb2
 
 bb6:
-t~3 = 2*a
-t~4 = b==t~3
-condJump t~4 bb7 bb8
+t~32 = 2*a
+t~34 = b==t~32
+condJump t~34 bb7 bb8
 
 bb7:
 jump bb4

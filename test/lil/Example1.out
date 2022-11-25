@@ -4,8 +4,8 @@ x = 6
 jump bb2
 
 bb2:
-t~1 = x<100
-condJump t~1 bb3 bb4
+t~3 = x<100
+condJump t~3 bb3 bb4
 
 bb3:
 x = x+1
