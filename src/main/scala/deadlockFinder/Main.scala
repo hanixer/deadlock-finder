@@ -1,28 +1,30 @@
 package deadlockFinder
 
-import cfg.{CfgGraph, Dominators}
+import analysis.PredicatesPropagation
+import analysis.opgraph.{InsertAdditionalNodes, OperationGraphBuilder}
+import analysis.pnet.PetriNetBuilder
+import cfg.CfgGraph
 import common.PrettyPrint
-import translation.{HilToLil, LilToSsa, SourceToHil}
+import parteval.Reduction
+import translation.*
 
-import deadlockFinder.analysis.ConstantPropagation
-import org.eclipse.jdt.core.dom.*
+import org.jgrapht.graph.{DefaultDirectedGraph, DefaultEdge}
 
 import java.nio.file.{Files, Path}
 
 object Main:
   def main(args: Array[String]): Unit =
-    val file = "examples/showcase/Example7.java"
-    val node: CompilationUnit = JavaParser.parseFile(file)
-    val hil = SourceToHil(node)
+    val path = args(0)
+    val hil = AssertInsertion(SourceToHil(JavaParser.parseFile(path)))
     val lil = HilToLil(hil)
-    val ssa = LilToSsa(lil)
-
-    Files.writeString(Path.of("out.ssa"), PrettyPrint(ssa))
-    
-    val func = ssa.funcs.head
-    val consts = ConstantPropagation.computeConstants(func)
-    for (varInfo, const) <- consts do
-      println(s"$varInfo -> $const")
-
+    val func = LilToSsa(new Reduction(lil.funcs.head).transform())
+    val cfg = CfgGraph(func)
+    Files.writeString(Path.of("target/cfgBig.dot"), PrettyPrint.funcToDot(func, cfg))
+    Files.writeString(Path.of("target/cfg.dot"), PrettyPrint.cfgToDot(cfg))
+    val operationGraph = OperationGraphBuilder(func)
+    Files.writeString(Path.of("target/opgraph.dot"), PrettyPrint.operationGraphToDot(operationGraph))
+    val petriNet = PetriNetBuilder(operationGraph)
+    Files.writeString(Path.of("target/petrinet.dot"), PrettyPrint.petriNetToDot(petriNet))
+    Files.writeString(Path.of("target/net.net"), PrettyPrint.petriNetToTina(petriNet))
 
 end Main
